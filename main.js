@@ -57,15 +57,23 @@ async function detectHardware() {
   const cpuModel = os.cpus()[0]?.model || 'Unknown CPU';
 
   let device = 'cpu';
-  const pyExe = globalPythonExe || 'python3';
-  try {
-    const result = execSync(
-      `"${pyExe}" -c "import torch; print('mps' if torch.backends.mps.is_available() else ('cuda' if torch.cuda.is_available() else 'cpu'))"`
-    ).toString().trim();
-    device = result;
-  } catch (_) {}
+  let gpuName = '';
 
-  return { totalRAM, freeRAM, cpuCount, cpuModel, device };
+  if (globalPythonExe) {
+    try {
+      const result = execSync(
+        `"${globalPythonExe}" -c "import torch; ` +
+        `print('cuda' if torch.cuda.is_available() else ` +
+        `'mps' if torch.backends.mps.is_available() else 'cpu'); ` +
+        `print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"`,
+        { timeout: 15000, stdio: 'pipe' }
+      ).toString().trim().split('\n');
+      device = result[0].trim();
+      gpuName = result[1] ? result[1].trim() : '';
+    } catch (_) {}
+  }
+
+  return { totalRAM, freeRAM, cpuCount, cpuModel, device, gpuName };
 }
 
 function calcFromPercent(pct) {
@@ -805,10 +813,33 @@ ipcMain.on('install-update', () => {
 // IPC ОБРАБОТЧИКИ
 // ─────────────────────────────────────────
 
-ipcMain.on('toggle-node', async (event, shouldStart) => {
-  console.log('[Main] toggle-node:', shouldStart);
-  if (shouldStart) await startNodeProcess();
-  else stopNodeProcess();
+ipcMain.on('toggle-node', async (event, shouldRun) => {
+  console.log('[Main] toggle-node:', shouldRun);
+  if (shouldRun) {
+    // Запускаем узел
+    if (!nodeProcess || nodeProcess.exitCode !== null) {
+      if (!globalPythonExe || !globalScriptPath) {
+        // setupAndStart не был запущен — запускаем
+        await setupAndStart();
+      } else {
+        // Python и скрипт уже есть — просто запускаем
+        startNode(globalPythonExe, globalScriptPath);
+      }
+    }
+  } else {
+    // Останавливаем узел
+    if (nodeProcess) {
+      nodeProcess.kill();
+      nodeProcess = null;
+    }
+    // На Windows убиваем принудительно
+    if (process.platform === 'win32') {
+      try {
+        execSync('taskkill /F /IM python.exe /T 2>nul',
+          { stdio: 'pipe' });
+      } catch (e) {}
+    }
+  }
 });
 
 ipcMain.handle('get-node-status', async () => ({
@@ -893,6 +924,19 @@ ipcMain.on('save-settings', async (event, settings) => {
       { method: 'POST' }
     );
   } catch (_) {}
+
+  // При смене GPU/CPU — перезапускаем узел
+  if (settings.useGpu !== undefined) {
+    process.env.FORCE_CPU = settings.useGpu ? '0' : '1';
+
+    if (nodeProcess) {
+      nodeProcess.kill();
+      nodeProcess = null;
+      setTimeout(() => {
+        startNode(globalPythonExe, globalScriptPath);
+      }, 2000);
+    }
+  }
 
   // Gateway и worker_id передаём узлу при перезапуске
   if (nodeProcess && settings.gateway) {

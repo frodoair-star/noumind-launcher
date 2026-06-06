@@ -1080,10 +1080,14 @@ function applySettings() {
 // ─────────────────────────────────────────
 window.electronAPI.onHardwareInfo(hw => {
   state.hardware = hw;
-  const devLabel = hw.device === 'mps' ? 'Apple MPS' : hw.device === 'cuda' ? 'CUDA GPU' : 'CPU';
+  const deviceLabel = hw.device === 'cuda'
+    ? `🟢 GPU: ${hw.gpuName || 'NVIDIA'}`
+    : hw.device === 'mps'
+    ? '🟡 Apple Silicon GPU'
+    : `🔴 CPU: ${hw.cpuModel}`;
   if (el('hw-info')) {
-    el('hw-info').innerHTML =
-      `${hw.totalRAM.toFixed(1)} GB RAM &nbsp;·&nbsp; ${devLabel} &nbsp;·&nbsp; ${hw.cpuCount} ядер &nbsp;·&nbsp; ${hw.cpuModel || ''}`;
+    el('hw-info').textContent =
+      `${hw.totalRAM.toFixed(1)}GB RAM · ${deviceLabel} · ${hw.cpuCount} ядер`;
   }
   updateSlider(state.settings.loadPercent);
 });
