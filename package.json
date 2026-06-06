@@ -1,0 +1,72 @@
+{
+  "name": "noumind",
+  "version": "0.1.1",
+  "description": "uNeuro — distributed LLM node launcher with EFCT+COM",
+  "main": "main.js",
+  "scripts": {
+    "setup": "node auto-setup.js",
+    "start": "node auto-setup.js && electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --mac --win"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "author": "uNeuro Team",
+  "license": "MIT",
+  "build": {
+    "appId": "io.noumind.launcher",
+    "productName": "uNeuro",
+    "files": [
+      "main.js",
+      "renderer.js",
+      "preload.js",
+      "index.html",
+      "auto-setup.js",
+      "!**/*.overfitted",
+      "!**/node_modules/.cache"
+    ],
+    "extraResources": [
+      {
+        "from": "../noumind/dist/neuron.py",
+        "to": "noumind-protected/neuron.py"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "frodoair-star",
+      "repo": "noumind-launcher"
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "category": "public.app-category.utilities",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "arm64"] },
+        { "target": "portable", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}

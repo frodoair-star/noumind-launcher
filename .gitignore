@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+npm-debug.log*
+package-lock.json
+out/
+.env
+.env.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.electron-builder

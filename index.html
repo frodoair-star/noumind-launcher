@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>uNeuro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Caveat:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"/>
+<style>
+/* ============================================================
+   uNeuro — Blueprint / Da Vinci design system
+   ============================================================ */
+:root {
+  --paper:        oklch(0.967 0.008 242);
+  --paper-2:      oklch(0.945 0.011 242);
+  --paper-3:      oklch(0.920 0.014 244);
+  --panel:        oklch(0.985 0.005 240);
+  --ink:          oklch(0.330 0.030 252);
+  --ink-soft:     oklch(0.470 0.034 250);
+  --ink-faint:    oklch(0.600 0.030 248);
+  --line:         oklch(0.640 0.040 246);
+  --line-soft:    oklch(0.760 0.030 244);
+  --line-faint:   oklch(0.860 0.020 242);
+  --grid:         oklch(0.815 0.022 242);
+  --grid-fine:    oklch(0.890 0.014 242);
+  --blue:         oklch(0.560 0.072 250);
+  --blue-deep:    oklch(0.430 0.072 254);
+  --blue-soft:    oklch(0.880 0.035 246);
+  --blue-wash:    oklch(0.930 0.022 246);
+  --sanguine:     oklch(0.585 0.105 38);
+  --sanguine-soft:oklch(0.760 0.060 40);
+  --sanguine-wash:oklch(0.910 0.030 42);
+  --shadow: 0 1px 2px oklch(0.40 0.04 250 / 0.08), 0 12px 40px oklch(0.40 0.06 252 / 0.10);
+  --font-display: 'Spectral', Georgia, serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-hand: 'Caveat', cursive;
+  --r: 3px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:var(--font-ui);color:var(--ink);-webkit-font-smoothing:antialiased;}
+body{
+  background-color: oklch(0.935 0.014 244);
+  background-image:
+    radial-gradient(circle at 30% 20%, oklch(0.96 0.012 240 / 0.7), transparent 60%),
+    linear-gradient(var(--grid-fine) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 100% 100%, 26px 26px, 26px 26px, 130px 130px, 130px 130px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+
+/* ── WINDOW ── */
+.win{
+  width:100vw; height:100vh;
+  background:var(--paper);
+  border:1px solid var(--ink);
+  border-radius:var(--r);
+  box-shadow:var(--shadow);
+  display:flex;flex-direction:column;
+  overflow:hidden;position:relative;
+}
+.win::before{
+  content:"";position:absolute;inset:0;
+  background-image:linear-gradient(var(--grid-fine) 1px, transparent 1px),linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px);
+  background-size:26px 26px;opacity:0.45;pointer-events:none;z-index:0;
+}
+
+/* ── TITLEBAR ── */
+.titlebar{
+  height:44px;flex:0 0 44px;
+  display:flex;align-items:center;padding:0 16px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(var(--panel), var(--paper-2));
+  position:relative;z-index:10;
+  -webkit-app-region:drag;user-select:none;
+}
+.lights{display:flex;gap:8px;align-items:center;-webkit-app-region:no-drag;}
+.light{
+  width:12px;height:12px;border-radius:50%;
+  border:1px solid var(--line-soft);background:var(--paper);
+  cursor:pointer;transition:background .15s;
+}
+.light.c1{border-color:oklch(0.55 0.12 30);}
+.light.c1:hover{background:oklch(0.75 0.16 30);}
+.light.c2{border-color:oklch(0.62 0.09 80);}
+.light.c2:hover{background:oklch(0.78 0.14 80);}
+.light.c3{border-color:oklch(0.55 0.07 150);}
+.light.c3:hover{background:oklch(0.72 0.12 150);}
+.titlebar-title{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:0.04em;
+  color:var(--ink-soft);display:flex;align-items:center;gap:10px;white-space:nowrap;
+}
+.titlebar-title .dot{width:7px;height:7px;border-radius:50%;background:var(--sanguine);box-shadow:0 0 0 3px var(--sanguine-wash);}
+.titlebar-title .dot.off{background:var(--ink-faint);box-shadow:0 0 0 3px var(--paper-3);}
+.titlebar-right{margin-left:auto;display:flex;gap:6px;-webkit-app-region:no-drag;}
+
+/* ── APP LAYOUT ── */
+.app{flex:1;min-height:0;display:grid;grid-template-columns:252px 1fr;position:relative;z-index:1;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg, oklch(0.955 0.011 244), oklch(0.935 0.014 244));
+  display:flex;flex-direction:column;min-height:0;
+}
+.brand{display:flex;align-items:center;gap:11px;padding:18px 18px 14px;}
+.brand .glyph{flex:0 0 auto;}
+.brand .word{display:flex;flex-direction:column;line-height:1;}
+.brand .word b{font-family:var(--font-display);font-weight:600;font-size:21px;letter-spacing:0.01em;color:var(--ink);}
+.brand .word small{font-family:var(--font-mono);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px;}
+
+.nav{padding:4px 12px 0;display:flex;flex-direction:column;gap:3px;}
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 12px;border-radius:var(--r);
+  font-size:13.5px;color:var(--ink-soft);cursor:pointer;
+  border:1px solid transparent;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.nav-item:hover{background:oklch(0.97 0.01 244 / 0.7);color:var(--ink);}
+.nav-item.active{background:var(--panel);color:var(--blue-deep);border-color:var(--line-soft);box-shadow:inset 2px 0 0 var(--blue);}
+.nav-item .ni-ico{width:16px;display:flex;justify-content:center;color:currentColor;}
+
+.newchat{
+  margin:14px 12px 8px;display:flex;align-items:center;gap:9px;justify-content:center;
+  padding:10px;border-radius:var(--r);border:1px dashed var(--line);
+  background:var(--panel);color:var(--ink);font-size:13px;cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.newchat:hover{border-color:var(--blue);background:var(--blue-wash);}
+
+.hist-head{
+  padding:14px 18px 6px;
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.2em;
+  text-transform:uppercase;color:var(--ink-faint);
+  display:flex;align-items:center;gap:8px;
+}
+.hist-head::after{content:"";flex:1;height:1px;background:var(--line-faint);}
+.hist{flex:1;min-height:0;overflow-y:auto;padding:2px 12px 8px;display:flex;flex-direction:column;gap:2px;}
+.hist-item{
+  padding:8px 11px;border-radius:var(--r);cursor:pointer;
+  border:1px solid transparent;display:flex;flex-direction:column;gap:3px;
+  transition:background .14s, border-color .14s;
+}
+.hist-item:hover{background:oklch(0.97 0.01 244 / 0.8);border-color:var(--line-faint);}
+.hist-item.active{background:var(--panel);border-color:var(--line-soft);}
+.hist-item .ht{font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-item .hm{display:flex;align-items:center;gap:7px;}
+.hist-item .hd{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);}
+.hist-item .hcost{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);margin-left:auto;display:inline-flex;align-items:center;gap:3px;}
+
+.sb-foot{border-top:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px;}
+.node-mini{
+  display:flex;align-items:center;gap:10px;
+  border:1px solid var(--line-soft);border-radius:var(--r);
+  background:var(--panel);padding:9px 11px;cursor:pointer;
+  transition:border-color .15s;
+}
+.node-mini:hover{border-color:var(--blue);}
+.node-mini .nd{width:9px;height:9px;border-radius:50%;background:var(--ink-faint);flex:0 0 auto;transition:background .3s;}
+.node-mini.on .nd{background:var(--sanguine);box-shadow:0 0 0 3px var(--sanguine-wash);animation:pulse 1.8s ease-in-out infinite;}
+.node-mini .nt{font-size:12px;color:var(--ink);}
+.node-mini .ns{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);margin-left:auto;}
+
+.balance{border:1px solid var(--line-soft);border-radius:var(--r);background:var(--panel);padding:11px 13px;position:relative;overflow:hidden;}
+.balance .bl{font-family:var(--font-mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-faint);}
+.balance .bv{font-family:var(--font-display);font-weight:600;font-size:26px;color:var(--ink);display:flex;align-items:baseline;gap:7px;margin-top:3px;}
+.balance .bv .tok{font-size:14px;color:var(--blue);}
+.balance .bd{font-family:var(--font-mono);font-size:10px;color:var(--sanguine);margin-top:2px;}
+
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--paper);position:relative;}
+.main-head{
+  flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:16px 26px;border-bottom:1px solid var(--line);
+  background:linear-gradient(var(--panel), oklch(0.955 0.009 242));
+}
+.main-head h1{font-family:var(--font-display);font-weight:600;font-size:19px;margin:0;color:var(--ink);}
+.main-head .sub{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:0.03em;}
+.head-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+
+.tok-chip{
+  display:inline-flex;align-items:center;gap:9px;
+  border:1px solid var(--line-soft);border-radius:999px;
+  background:var(--panel);padding:6px 8px 6px 6px;
+}
+.tok-chip .tv{font-family:var(--font-mono);font-weight:500;font-size:13px;color:var(--ink);}
+.tok-chip .tu{font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);}
+
+.icon-btn{
+  width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--line-soft);border-radius:var(--r);background:var(--panel);
+  color:var(--ink-soft);cursor:pointer;transition:border-color .15s, color .15s, background .15s;
+}
+.icon-btn:hover{border-color:var(--blue);color:var(--blue-deep);background:var(--blue-wash);}
+.icon-btn.sm{width:28px;height:28px;}
+
+.scroll{flex:1;min-height:0;overflow-y:auto;}
+
+/* ── DASHBOARD ── */
+.dash{padding:26px 30px 40px;max-width:1000px;margin:0 auto;}
+.dash .hello{font-family:var(--font-hand);font-size:26px;color:var(--blue-deep);line-height:1;}
+.dash .hello-sub{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);margin-top:6px;letter-spacing:0.04em;}
+.grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-top:22px;}
+
+.card{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:18px;position:relative;}
+.card.dim{background:var(--paper-2);}
+.card-h{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.card-h .ct{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-faint);}
+.card-h .hline{flex:1;height:1px;background:var(--line-faint);}
+.corner{position:absolute;width:9px;height:9px;border:1px solid var(--line);opacity:0.6;}
+.corner.tl{top:-1px;left:-1px;border-right:0;border-bottom:0;}
+.corner.tr{top:-1px;right:-1px;border-left:0;border-bottom:0;}
+.corner.bl{bottom:-1px;left:-1px;border-right:0;border-top:0;}
+.corner.br{bottom:-1px;right:-1px;border-left:0;border-top:0;}
+
+.bigbal .num{
+  font-family:var(--font-display);font-weight:600;font-size:46px;color:var(--ink);
+  line-height:1;letter-spacing:-0.01em;display:flex;align-items:baseline;gap:9px;white-space:nowrap;
+}
+.bigbal .num .tok{font-size:22px;color:var(--blue);margin-left:2px;}
+.bigbal .row{display:flex;gap:22px;margin-top:18px;}
+.stat{display:flex;flex-direction:column;gap:4px;}
+.stat .sl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);}
+.stat .sv{font-family:var(--font-mono);font-size:16px;color:var(--ink);white-space:nowrap;}
+.stat .sv.up{color:var(--sanguine);}
+
+.badge{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;
+  padding:5px 11px;border-radius:999px;border:1px solid var(--line-soft);
+  color:var(--ink-soft);background:var(--paper-2);
+}
+.badge .bnd{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);}
+.badge.on{color:var(--sanguine);border-color:var(--sanguine-soft);background:var(--sanguine-wash);}
+.badge.on .bnd{background:var(--sanguine);animation:pulse 1.8s ease-in-out infinite;}
+.uptime-txt{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);margin-left:auto;}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-family:var(--font-ui);font-size:14px;font-weight:500;
+  padding:12px 18px;border-radius:var(--r);cursor:pointer;
+  border:1px solid var(--blue-deep);background:var(--blue-deep);color:oklch(0.97 0.01 244);
+  transition:filter .15s, transform .05s;width:100%;
+}
+.btn:hover{filter:brightness(1.08);}
+.btn:active{transform:translateY(1px);}
+.btn.stop{background:var(--paper);color:var(--sanguine);border-color:var(--sanguine-soft);}
+.btn.stop:hover{background:var(--sanguine-wash);}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line-soft);}
+.btn.ghost:hover{border-color:var(--blue);background:var(--blue-wash);}
+.btn.sm{padding:8px 13px;font-size:12.5px;width:auto;}
+
+.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.metric{border:1px dashed var(--line-soft);border-radius:var(--r);padding:11px 13px;background:var(--paper);}
+.metric .ml{font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);}
+.metric .mv{font-family:var(--font-mono);font-size:19px;color:var(--blue-deep);margin-top:4px;}
+.metric .mv small{font-size:11px;color:var(--ink-faint);}
+
+.link-row{margin-top:14px;display:flex;}
+.txt-link{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:11.5px;color:var(--blue-deep);cursor:pointer;
+  border-bottom:1px dashed var(--blue);padding-bottom:1px;
+}
+.txt-link:hover{color:var(--sanguine);border-color:var(--sanguine);}
+
+/* network schematic */
+.net{position:relative;height:210px;overflow:hidden;}
+.net-node{
+  position:absolute;width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--blue);background:var(--panel);
+  transform:translate(-50%,-50%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:8px;color:var(--blue-deep);
+}
+.net-node.self{border-color:var(--sanguine);background:var(--sanguine-wash);color:var(--sanguine);width:36px;height:36px;font-size:9px;}
+.net-node.self.on{animation:pulse 2s ease-in-out infinite;}
+.net-line{position:absolute;height:1px;transform-origin:0 50%;border-top:1px dashed var(--line);}
+.net-line.flow{border-top-color:var(--blue);animation:dashflow 1.4s linear infinite;}
+
+/* bar chart */
+.chart{display:flex;align-items:flex-end;gap:10px;height:120px;padding-top:6px;}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end;}
+.bar{width:100%;max-width:30px;background:var(--blue-soft);border:1px solid var(--blue);border-bottom:none;border-radius:2px 2px 0 0;transition:height .6s cubic-bezier(.2,.8,.2,1);}
+.bar.today{background:var(--sanguine-wash);border-color:var(--sanguine-soft);}
+.bar-wrap .bx{font-family:var(--font-mono);font-size:9px;color:var(--ink-faint);}
+.note{font-family:var(--font-hand);font-size:17px;color:var(--ink-faint);transform:rotate(-1.5deg);white-space:nowrap;}
+.note.blue{color:var(--blue);}
+
+/* ── CHAT ── */
+.chat{display:flex;flex-direction:column;height:100%;min-height:0;}
+.thread{flex:1;min-height:0;overflow-y:auto;padding:26px 0 18px;}
+.thread-inner{max-width:760px;margin:0 auto;padding:0 28px;display:flex;flex-direction:column;gap:22px;}
+.msg{display:flex;gap:13px;}
+.msg .ava{
+  flex:0 0 auto;width:32px;height:32px;border-radius:50%;
+  border:1.5px solid var(--blue);background:var(--panel);
+  display:flex;align-items:center;justify-content:center;
+}
+.msg.assistant .ava{border-color:var(--sanguine-soft);background:var(--sanguine-wash);}
+.msg .body{min-width:0;}
+.msg .who{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px;display:flex;align-items:center;gap:9px;}
+.msg .who .msg-cost{color:var(--sanguine);display:inline-flex;align-items:center;gap:3px;text-transform:none;}
+.msg .bubble{font-size:14.5px;line-height:1.62;color:var(--ink);}
+.msg.user{justify-content:flex-end;}
+.msg.user .body{max-width:78%;}
+.msg.user .bubble{background:var(--blue-wash);border:1px solid var(--blue-soft);border-radius:var(--r);padding:12px 15px;}
+.msg.user .who{justify-content:flex-end;}
+.msg.assistant .body{max-width:100%;}
+.msg .bubble p{margin:0 0 10px;}
+.msg .bubble p:last-child{margin-bottom:0;}
+.msg .bubble code{font-family:var(--font-mono);font-size:12.5px;background:var(--paper-2);border:1px solid var(--line-faint);border-radius:2px;padding:1px 5px;}
+
+.thinking-wrap{display:flex;align-items:center;gap:13px;}
+.compass{width:32px;height:32px;border-radius:50%;border:1.5px dashed var(--blue);position:relative;animation:spin 2.4s linear infinite;}
+.compass::after{content:"";position:absolute;top:50%;left:50%;width:13px;height:1.5px;background:var(--blue-deep);transform-origin:0 50%;}
+.compass .pivot{position:absolute;top:50%;left:50%;width:4px;height:4px;border-radius:50%;background:var(--sanguine);transform:translate(-50%,-50%);}
+.thinking-tt{font-family:var(--font-hand);font-size:19px;color:var(--blue-deep);}
+.thinking-tt .e{animation:blink 1.4s steps(4) infinite;}
+.typing-cursor{display:inline-block;width:7px;height:16px;background:var(--blue);margin-left:2px;vertical-align:text-bottom;animation:blink 1s steps(2) infinite;}
+
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px;text-align:center;}
+.chat-empty .big{font-family:var(--font-display);font-weight:500;font-size:27px;color:var(--ink);}
+.chat-empty .sm{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);letter-spacing:0.03em;}
+.suggest-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px;width:100%;margin-top:6px;}
+.suggest{text-align:left;border:1px dashed var(--line);border-radius:var(--r);background:var(--panel);padding:13px 15px;cursor:pointer;transition:border-color .15s, background .15s;}
+.suggest:hover{border-color:var(--blue);background:var(--blue-wash);}
+.suggest .st{font-size:13.5px;color:var(--ink);}
+.suggest .sc{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:5px;}
+
+.composer{flex:0 0 auto;border-top:1px solid var(--line);background:linear-gradient(oklch(0.955 0.009 242), var(--panel));padding:14px 0 16px;}
+.composer-inner{max-width:760px;margin:0 auto;padding:0 28px;}
+.composer .marg{font-family:var(--font-hand);font-size:16px;color:var(--ink-faint);margin:0 0 8px 4px;opacity:0.85;}
+.input-shell{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--panel);
+  display:flex;flex-direction:column;transition:border-color .15s, box-shadow .15s;
+}
+.input-shell:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-wash);}
+.input-shell textarea{
+  border:0;background:transparent;resize:none;outline:none;
+  font-family:var(--font-ui);font-size:14.5px;color:var(--ink);line-height:1.5;
+  padding:14px 16px 8px;max-height:160px;min-height:24px;
+}
+.input-shell textarea::placeholder{color:var(--ink-faint);}
+.input-foot{display:flex;align-items:center;gap:12px;padding:6px 10px 9px 16px;}
+.input-foot .est{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);display:inline-flex;align-items:center;gap:6px;}
+.input-foot .est b{color:var(--blue-deep);font-weight:500;}
+.input-foot .right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.input-foot .bal{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);}
+.send{
+  width:34px;height:34px;border-radius:var(--r);cursor:pointer;
+  border:1px solid var(--blue-deep);background:var(--blue-deep);
+  color:oklch(0.97 0.01 244);display:inline-flex;align-items:center;justify-content:center;
+  transition:filter .15s;
+}
+.send:hover{filter:brightness(1.1);}
+.send:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* mode bar */
+.mode-bar{display:flex;gap:6px;padding:8px 28px;max-width:760px;margin:0 auto;width:100%;}
+.mode-btn{
+  flex:1;padding:5px 4px;background:var(--panel);
+  border:1px solid var(--line-soft);border-radius:var(--r);
+  color:var(--ink-soft);font-family:var(--font-mono);font-size:10.5px;cursor:pointer;
+  transition:all .15s;text-align:center;
+}
+.mode-btn:hover{border-color:var(--blue);color:var(--blue-deep);}
+.mode-btn.active{background:var(--blue-wash);border-color:var(--blue);color:var(--blue-deep);font-weight:600;}
+
+/* ── MODAL ── */
+.overlay{
+  position:absolute;inset:0;z-index:20;
+  background:oklch(0.40 0.05 252 / 0.28);
+  backdrop-filter:blur(2px);
+  display:none;align-items:center;justify-content:center;padding:30px;
+}
+.overlay.open{display:flex;animation:fade .18s ease;}
+@keyframes fade{from{opacity:0;}}
+.modal{
+  width:min(680px, 100%);max-height:90%;
+  background:var(--paper);border:1px solid var(--ink);border-radius:var(--r);
+  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+  position:relative;animation:rise .22s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes rise{from{transform:translateY(10px);opacity:0;}}
+.modal::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--grid-fine) 1px, transparent 1px),linear-gradient(90deg,var(--grid-fine) 1px, transparent 1px);background-size:26px 26px;opacity:0.5;pointer-events:none;}
+.modal-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);position:relative;z-index:1;}
+.modal-head h2{font-family:var(--font-display);font-weight:600;font-size:17px;margin:0;}
+.modal-head .mh-sub{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);letter-spacing:0.04em;}
+.modal-body{padding:20px;overflow-y:auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;position:relative;z-index:1;background:var(--paper-2);}
+
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;}
+.meter .mh{display:flex;align-items:baseline;gap:8px;margin-bottom:7px;}
+.meter .mh .mn{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-soft);}
+.meter .mh .mp{margin-left:auto;font-family:var(--font-mono);font-size:13px;color:var(--blue-deep);}
+.meter .track{height:10px;border:1px solid var(--line-soft);border-radius:2px;background:var(--paper);position:relative;overflow:hidden;}
+.meter .track .fill{position:absolute;inset:0 auto 0 0;background:repeating-linear-gradient(135deg,var(--blue-soft),var(--blue-soft) 5px,var(--blue-wash) 5px,var(--blue-wash) 10px);border-right:1px solid var(--blue);transition:width .5s ease;}
+.meter .track.hot .fill{background:repeating-linear-gradient(135deg,var(--sanguine-soft),var(--sanguine-soft) 5px,var(--sanguine-wash) 5px,var(--sanguine-wash) 10px);border-color:var(--sanguine);}
+.meter .ticks{display:flex;justify-content:space-between;margin-top:4px;}
+.meter .ticks span{width:1px;height:4px;background:var(--line-faint);}
+
+.set-row{display:flex;flex-direction:column;gap:9px;}
+.set-row .srh{display:flex;align-items:center;gap:10px;}
+.set-row .srh label{font-size:13px;color:var(--ink);}
+.set-row .srh .val{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--blue-deep);}
+input[type=range].slider{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--line);border-radius:2px;outline:none;}
+input[type=range].slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid var(--blue-deep);cursor:pointer;}
+
+.seg{display:inline-flex;border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden;background:var(--panel);}
+.seg button{font-family:var(--font-ui);font-size:12.5px;padding:8px 16px;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;border-right:1px solid var(--line-faint);transition:background .14s,color .14s;}
+.seg button:last-child{border-right:0;}
+.seg button.active{background:var(--blue-deep);color:oklch(0.97 0.01 244);}
+
+.toggle-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px dashed var(--line-faint);}
+.toggle-row:first-child{border-top:none;}
+.toggle-row .tl{font-size:13px;color:var(--ink);}
+.toggle-row .td{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:2px;}
+.toggle-row .tcol{margin-right:auto;}
+.switch{width:40px;height:22px;border-radius:999px;border:1px solid var(--line);background:var(--paper-2);position:relative;cursor:pointer;transition:background .16s,border-color .16s;flex:0 0 auto;}
+.switch .kn{position:absolute;top:1px;left:1px;width:18px;height:18px;border-radius:50%;background:var(--panel);border:1px solid var(--line-soft);transition:left .16s;}
+.switch.on{background:var(--blue-wash);border-color:var(--blue);}
+.switch.on .kn{left:19px;border-color:var(--blue);}
+
+.sec-label{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-faint);display:flex;align-items:center;gap:9px;}
+.sec-label::after{content:"";flex:1;height:1px;background:var(--line-faint);}
+
+/* EFCT panel in dashboard */
+.efct-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:10px;}
+.efct-cell{border:1px dashed var(--line-faint);border-radius:var(--r);padding:9px 11px;background:var(--paper);}
+.efct-cell .el{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);}
+.efct-cell .ev{font-family:var(--font-mono);font-size:14px;color:var(--blue-deep);margin-top:3px;}
+
+/* scrollbar */
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--line-soft);border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* animations */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px var(--sanguine-wash);}50%{box-shadow:0 0 0 6px oklch(0.91 0.03 42 / 0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes blink{0%{opacity:.2}50%{opacity:1}100%{opacity:.2}}
+@keyframes dashflow{to{background-position:14px 0;}}
+
+@media(max-width:920px){
+  .grid2{grid-template-columns:1fr;}
+  .meters,.suggest-grid,.efct-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── БАННЕР ОБНОВЛЕНИЯ ── -->
+<div id="update-banner" style="
+  display: none; background: #d98a6a; color: white;
+  padding: 8px 16px; align-items: center; justify-content: space-between;
+  font-size: 13px; position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
+  font-family: -apple-system, sans-serif;
+">
+  <span>Доступно обновление — скачиваю...</span>
+</div>
+
+<!-- ── ВЫБОР ЯЗЫКА (самый первый запуск) ── -->
+<div id="langPicker" style="
+  display: none; position: fixed; inset: 0; background: #f0f4f8; z-index: 10001;
+  flex-direction: column; align-items: center; justify-content: center;
+  font-family: -apple-system, sans-serif;
+">
+  <div style="text-align:center; max-width:360px; padding:32px;">
+    <div style="width:80px;height:80px;background:#34507e;border-radius:20px;margin:0 auto 24px;display:flex;align-items:center;justify-content:center;font-size:36px;">🧠</div>
+    <h1 style="font-size:24px;font-weight:700;color:#1a2a3a;margin:0 0 6px;">uNeuro</h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 28px;">Choose language · Sprache wählen · Выберите язык</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="pickLanguage('en')" style="padding:14px;border:1px solid #d0d7e2;border-radius:10px;background:white;font-size:15px;cursor:pointer;text-align:left;">🇬🇧 &nbsp; English</button>
+      <button onclick="pickLanguage('de')" style="padding:14px;border:1px solid #d0d7e2;border-radius:10px;background:white;font-size:15px;cursor:pointer;text-align:left;">🇩🇪 &nbsp; Deutsch</button>
+      <button onclick="pickLanguage('ru')" style="padding:14px;border:1px solid #d0d7e2;border-radius:10px;background:white;font-size:15px;cursor:pointer;text-align:left;">🇷🇺 &nbsp; Русский</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ОНБОРДИНГ (первый запуск) ── -->
+<div id="onboarding" style="
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: #f0f4f8; z-index: 9999;
+  flex-direction: column; align-items: center; justify-content: center;
+  font-family: -apple-system, sans-serif;
+">
+  <div style="text-align: center; max-width: 400px; padding: 32px;">
+    <div style="
+      width: 80px; height: 80px; background: #34507e; border-radius: 20px;
+      margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+    ">🧠</div>
+    <h1 style="font-size: 26px; font-weight: 700; color: #1a2a3a; margin: 0 0 8px;" data-i18n="onboarding.welcome">
+      Добро пожаловать в uNeuro
+    </h1>
+    <p style="color: #6b7280; font-size: 14px; margin: 0 0 32px; line-height: 1.6;" data-i18n="onboarding.subtitle">
+      Настраиваю твой узел сети. Это займёт пару минут.
+    </p>
+    <div id="onboarding-step" style="color: #34507e; font-size: 13px; margin-bottom: 12px; min-height: 20px;">
+      Подготовка...
+    </div>
+    <div style="background: #e5e7eb; border-radius: 8px; height: 6px; overflow: hidden;">
+      <div id="onboarding-bar" style="background: #d98a6a; height: 6px; width: 0%; border-radius: 8px; transition: width 0.4s ease;"></div>
+    </div>
+    <div id="onboarding-error" style="
+      display: none; color: #ef4444; font-size: 13px; margin-top: 16px;
+      padding: 12px; background: #fef2f2; border-radius: 8px;
+    "></div>
+  </div>
+</div>
+
+<div class="win" id="win">
+
+  <!-- ── TITLEBAR ── -->
+  <div class="titlebar">
+    <div class="lights">
+      <span class="light c1" id="btnClose" title="Закрыть"></span>
+      <span class="light c2" id="btnMin"   title="Свернуть"></span>
+      <span class="light c3" id="btnMax"   title="Развернуть"></span>
+    </div>
+    <div class="titlebar-title">
+      <span class="dot off" id="titleDot"></span>
+      <span id="titleText">uNeuro · узел в простое</span>
+    </div>
+    <div class="titlebar-right">
+      <button class="icon-btn sm" id="btnLoad" title="Нагрузка на систему">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.6"/><line x1="12" y1="12" x2="16.5" y2="8.5"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── APP ── -->
+  <div class="app">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="glyph">
+          <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="18.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1"/>
+            <line x1="20" y1="20" x2="20" y2="8" stroke="var(--line)" stroke-width="1"/>
+            <line x1="20" y1="20" x2="30.4" y2="26" stroke="var(--line)" stroke-width="1"/>
+            <line x1="20" y1="20" x2="9.6" y2="26" stroke="var(--line)" stroke-width="1"/>
+            <circle cx="20" cy="8" r="3" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/>
+            <circle cx="30.4" cy="26" r="3" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/>
+            <circle cx="9.6" cy="26" r="3" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/>
+            <circle cx="20" cy="20" r="4.2" id="brandCenter" fill="var(--panel)" stroke="var(--blue-deep)" stroke-width="1.5"/>
+          </svg>
+        </span>
+        <span class="word"><b>uNeuro</b><small>децентрализованный ии</small></span>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-item active" id="navDash" onclick="setView('dash')">
+          <span class="ni-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7"/><rect x="13.5" y="3.5" width="7" height="7"/><rect x="3.5" y="13.5" width="7" height="7"/><rect x="13.5" y="13.5" width="7" height="7"/></svg></span>
+          <span data-i18n="nav.dashboard">Кабинет</span>
+        </div>
+        <div class="nav-item" id="navChat" onclick="setView('chat')">
+          <span class="ni-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 17l-2 3v-3"/></svg></span>
+          <span data-i18n="nav.chat">Чат с ИИ</span>
+        </div>
+      </nav>
+
+      <div class="newchat" onclick="newChat()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span data-i18n="sidebar.newChat">Новый запрос</span>
+      </div>
+
+      <div class="hist-head">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><polyline points="12,7 12,12 16,14"/></svg>
+        <span data-i18n="sidebar.history">История</span>
+      </div>
+      <div class="hist" id="histList"></div>
+
+      <div class="sb-foot">
+        <div class="node-mini" id="nodeMini" onclick="toggleNode()">
+          <span class="nd" id="nodeMiniDot"></span>
+          <span class="nt" id="nodeMiniText">Узел остановлен</span>
+          <span class="ns">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.6"/><line x1="12" y1="12" x2="16.5" y2="8.5"/></svg>
+          </span>
+        </div>
+        <div class="balance">
+          <div class="bl" data-i18n="balance.label">Баланс · NEU</div>
+          <div class="bv"><span class="num" id="sbBalance">0,00</span><span class="tok">ν</span></div>
+          <div class="bd" id="sbDelta">сегодня +0,00 ν</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <main class="main">
+      <div class="main-head">
+        <div>
+          <h1 id="mainTitle">Личный кабинет</h1>
+          <div class="sub" id="mainSub">УПРАВЛЕНИЕ УЗЛОМ И ТОКЕНАМИ</div>
+        </div>
+        <div class="head-right">
+          <div class="tok-chip">
+            <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="var(--blue)" stroke-width="0.7" stroke-dasharray="1.5 2"/><text x="12" y="16.2" text-anchor="middle" font-family="var(--font-display)" font-size="11" font-weight="600" fill="var(--blue-deep)">ν</text></svg>
+            <span class="tv" id="headBalance">0,00</span><span class="tu">ν</span>
+          </div>
+          <button class="icon-btn" id="headBtn" onclick="headBtnClick()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.6"/><line x1="12" y1="12" x2="16.5" y2="8.5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <!-- Баннер низкого баланса -->
+      <div id="balanceBanner" style="
+        display:none; background:var(--sanguine-wash); border-bottom:1px solid var(--sanguine-soft);
+        padding:8px 26px; font-family:var(--font-mono); font-size:11px; color:var(--sanguine);
+        display:none; align-items:center; gap:10px;
+      ">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>
+        <span id="balanceBannerText">Пополни баланс или обработай больше запросов</span>
+      </div>
+
+      <div class="scroll" id="viewDash">
+        <div class="dash">
+          <div class="hello" data-i18n="dash.welcome">С возвращением, исследователь.</div>
+          <div class="hello-sub" id="dashSub">УЗЕЛ · СЕТЬ uNeuro · ожидание</div>
+
+          <div class="grid2">
+            <!-- balance card -->
+            <div class="card bigbal">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="card-h"><span class="ct" data-i18n="dash.balanceTokens">Баланс токенов</span><i class="hline"></i></div>
+              <div class="num"><span id="dashBalance">0,00</span><span class="tok">NEU</span></div>
+              <div class="row">
+                <div class="stat"><span class="sl" data-i18n="dash.minedToday">Сегодня добыто</span><span class="sv up" id="dashDelta">+0,00 ν</span></div>
+                <div class="stat"><span class="sl" data-i18n="dash.spent">Потрачено</span><span class="sv" id="dashSpent">−0 ν</span></div>
+                <div class="stat"><span class="sl" data-i18n="dash.requests">Запросов</span><span class="sv" id="dashReqs">0</span></div>
+              </div>
+              <div style="margin-top:14px;position:relative;">
+                <span class="note blue" style="position:absolute;right:4px;top:-6px;" id="dashUsd">≈ 0,00 $</span>
+              </div>
+            </div>
+
+            <!-- node control card -->
+            <div class="card">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="status-row" style="display:flex;align-items:center;gap:11px;margin-bottom:16px;">
+                <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-faint);" data-i18n="dash.miningNode">Узел добычи</span>
+                <span class="badge" id="nodeBadge"><i class="bnd"></i><span id="nodeBadgeText">остановлен</span></span>
+                <span class="uptime-txt" id="dashUptime">—</span>
+              </div>
+              <div id="nodeOffMsg" style="font-size:13.5px;line-height:1.6;color:var(--ink-soft);margin:2px 0 16px;">
+                Предоставьте вычислительные ресурсы сети — и зарабатывайте токены <b>ν</b>, которыми оплачиваются запросы к ИИ.
+              </div>
+              <div id="nodeLiveGrid" class="live-grid" style="display:none;">
+                <div class="metric"><div class="ml" data-i18n="dash.requests">Запросов</div><div class="mv" id="liveContrib">0</div></div>
+                <div class="metric"><div class="ml" data-i18n="dash.miningSpeed">Скорость добычи</div><div class="mv" id="liveMining">0,00 <small>ν/мин</small></div></div>
+                <div class="metric" style="grid-column:1/-1"><div class="ml" data-i18n="dash.sessionMined">Намайнено за сессию</div><div class="mv" style="color:var(--sanguine)" id="liveSession">+0,00 <small>ν</small></div></div>
+              </div>
+              <div style="margin-top:16px;">
+                <button class="btn" id="dashToggleBtn" onclick="toggleNode()">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="12" y1="3.5" x2="12" y2="12"/><path d="M7 6.5a8 8 0 1 0 10 0"/></svg>
+                  Запустить узел
+                </button>
+              </div>
+              <div class="link-row">
+                <span class="txt-link" onclick="openLoad()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.6"/><line x1="12" y1="12" x2="16.5" y2="8.5"/></svg>
+                  Нагрузка на систему и настройки
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid2" style="grid-template-columns:1fr 1fr;">
+            <!-- network -->
+            <div class="card dim">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="card-h">
+                <span class="ct" data-i18n="dash.topology">Топология сети</span><i class="hline"></i>
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);" id="netStatus">○ ожидание</span>
+              </div>
+              <canvas id="netCanvas" style="width:100%;height:210px;display:block;"></canvas>
+            </div>
+
+            <!-- earnings chart -->
+            <div class="card">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="card-h">
+                <span class="ct" data-i18n="dash.mining7d">Добыча · 7 дней</span><i class="hline"></i>
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);">ν / день</span>
+              </div>
+              <div class="chart" id="chartBars"></div>
+              <div style="margin-top:12px;position:relative;">
+                <span class="note" style="position:absolute;right:0;top:-2px;" data-i18n="dash.peakToday">сегодня — пик ↗</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- EFCT stats -->
+          <div class="card" style="margin-top:18px;">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-h"><span class="ct">EFCT · Адаптация нейрона</span><i class="hline"></i><span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);" id="efctStatus">⏳ ожидание</span></div>
+            <div class="efct-row">
+              <div class="efct-cell"><div class="el">adaptation</div><div class="ev" id="efctAdaptation">0.000000</div></div>
+              <div class="efct-cell"><div class="el">tasks_done</div><div class="ev" id="efctTasksDone">0</div></div>
+              <div class="efct-cell"><div class="el">gates_nonzero</div><div class="ev" id="efctGatesNonzero">0/2048</div></div>
+              <div class="efct-cell"><div class="el">baseline</div><div class="ev" id="efctBaseline">0.000000</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div id="viewChat" style="display:none;flex:1;flex-direction:column;min-height:0;">
+        <div class="chat">
+          <div class="thread" id="chatThread">
+            <div class="chat-empty" id="chatEmpty">
+              <svg width="56" height="56" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="18.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1"/>
+                <line x1="20" y1="20" x2="20" y2="8" stroke="var(--line)" stroke-width="1"/>
+                <line x1="20" y1="20" x2="30.4" y2="26" stroke="var(--line)" stroke-width="1"/>
+                <line x1="20" y1="20" x2="9.6" y2="26" stroke="var(--line)" stroke-width="1"/>
+                <circle cx="20" cy="8" r="3" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/>
+                <circle cx="30.4" cy="26" r="3" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/>
+                <circle cx="9.6" cy="26" r="3" fill="var(--blue-wash)" stroke="var(--blue)" stroke-width="1.3"/>
+                <circle cx="20" cy="20" r="4.2" fill="var(--sanguine-wash)" stroke="var(--sanguine)" stroke-width="1.5"/>
+              </svg>
+              <div class="big" data-i18n="chat.help">Чем помочь сегодня?</div>
+              <div class="sm" data-i18n="chat.eachReq">КАЖДЫЙ ЗАПРОС ОПЛАЧИВАЕТСЯ ТОКЕНАМИ ν · МОДЕЛЬ: uNeuro-Core</div>
+              <div class="suggest-grid">
+                <button class="suggest" onclick="pickSuggest(this)"><div class="st">Что такое децентрализованный инференс?</div><div class="sc">≈ 28 ν</div></button>
+                <button class="suggest" onclick="pickSuggest(this)"><div class="st">Как работает EFCT нейрон?</div><div class="sc">≈ 22 ν</div></button>
+                <button class="suggest" onclick="pickSuggest(this)"><div class="st">Объясни доказательство полезной работы</div><div class="sc">≈ 34 ν</div></button>
+                <button class="suggest" onclick="pickSuggest(this)"><div class="st">Чем отличается GPU от MPS для ИИ?</div><div class="sc">≈ 26 ν</div></button>
+              </div>
+            </div>
+            <div class="thread-inner" id="chatMessages" style="display:none;"></div>
+          </div>
+
+          <div class="mode-bar">
+            <button class="mode-btn" id="modeFast"     data-mode="fast">⚡ Быстро — 10 ν</button>
+            <button class="mode-btn active" id="modeBalanced" data-mode="balanced">⚖️ Баланс — 4 ν</button>
+            <button class="mode-btn" id="modeEconomy"  data-mode="economy">🐢 Экономно — 1 ν</button>
+          </div>
+
+          <div class="composer">
+            <div class="composer-inner">
+              <div class="marg" data-i18n="composer.autoPay">оплата спишется автоматически из баланса узла →</div>
+              <div class="input-shell">
+                <textarea id="chatInput" rows="1" placeholder="Опишите задачу для ИИ…" data-i18n-ph="composer.placeholder"></textarea>
+                <div class="input-foot">
+                  <span class="est">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><polyline points="13,3 5,13 11,13 10,21 19,10 13,10 13,3"/></svg>
+                    оценка: <b id="estCost">—</b>
+                  </span>
+                  <div class="right">
+                    <span class="bal"><span data-i18n="composer.balance">баланс</span> <span id="composerBal">0</span> ν</span>
+                    <button class="send" id="chatSendBtn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── MODAL: system load + settings ── -->
+  <div class="overlay" id="loadOverlay" onclick="closeLoad()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.6"/><line x1="12" y1="12" x2="16.5" y2="8.5"/></svg>
+        <div>
+          <h2 data-i18n="modal.loadTitle">Нагрузка на систему</h2>
+          <div class="mh-sub" id="modalNodeId">УЗЕЛ · ПРОСТОЙ</div>
+        </div>
+        <button class="icon-btn sm" style="margin-left:auto;" onclick="closeLoad()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <div>
+          <div class="sec-label" style="margin-bottom:16px;" data-i18n="modal.currentLoad">Текущая нагрузка</div>
+          <div class="meters">
+            <div class="meter"><div class="mh"><span class="mn" data-i18n="meter.cpu">Процессор</span><span class="mp" id="mCpu">0%</span></div><div class="track" id="mCpuTrack"><div class="fill" id="mCpuFill" style="width:0%"></div></div><div class="ticks"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+            <div class="meter"><div class="mh"><span class="mn" data-i18n="meter.gpu">Видеоядро</span><span class="mp" id="mGpu">0%</span></div><div class="track" id="mGpuTrack"><div class="fill" id="mGpuFill" style="width:0%"></div></div><div class="ticks"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+            <div class="meter"><div class="mh"><span class="mn" data-i18n="meter.ram">Память</span><span class="mp" id="mRam">0%</span></div><div class="track"><div class="fill" id="mRamFill" style="width:0%"></div></div><div class="ticks"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+            <div class="meter"><div class="mh"><span class="mn" data-i18n="meter.net">Сеть</span><span class="mp" id="mNet">0%</span></div><div class="track"><div class="fill" id="mNetFill" style="width:0%"></div></div><div class="ticks"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sec-label" style="margin-bottom:16px;" data-i18n="modal.limits">Лимиты ресурсов</div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div class="set-row">
+              <div class="srh"><label data-i18n="modal.systemLoad">Нагрузка на систему</label><span class="val" id="sliderVal">40%</span></div>
+              <div id="hw-info" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-bottom:6px;">Определяю железо…</div>
+              <input class="slider" type="range" min="5" max="100" value="40" id="load-slider"/>
+            </div>
+            <div class="set-row">
+              <div class="srh"><label data-i18n="modal.estimate">Оценка</label></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:4px;">
+                <div style="border:1px dashed var(--line-faint);border-radius:var(--r);padding:8px 10px;background:var(--paper);">
+                  <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;color:var(--ink-faint);">RAM</div>
+                  <div style="font-family:var(--font-mono);font-size:13px;color:var(--blue-deep);margin-top:2px;" id="s-ram">—</div>
+                </div>
+                <div style="border:1px dashed var(--line-faint);border-radius:var(--r);padding:8px 10px;background:var(--paper);">
+                  <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;color:var(--ink-faint);" data-i18n="est.layers">Слои</div>
+                  <div style="font-family:var(--font-mono);font-size:13px;color:var(--blue-deep);margin-top:2px;" id="s-layers">—</div>
+                </div>
+                <div style="border:1px dashed var(--line-faint);border-radius:var(--r);padding:8px 10px;background:var(--paper);">
+                  <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;color:var(--ink-faint);" data-i18n="est.income">Доход</div>
+                  <div style="font-family:var(--font-mono);font-size:13px;color:var(--sanguine);margin-top:2px;" id="s-compute">—</div>
+                </div>
+                <div style="border:1px dashed var(--line-faint);border-radius:var(--r);padding:8px 10px;background:var(--paper);">
+                  <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;color:var(--ink-faint);" data-i18n="est.speed">Скорость</div>
+                  <div style="font-family:var(--font-mono);font-size:13px;color:var(--blue-deep);margin-top:2px;" id="s-speed">—</div>
+                </div>
+              </div>
+            </div>
+            <div class="set-row">
+              <div class="srh"><label data-i18n="modal.intensity">Интенсивность добычи</label></div>
+              <div class="seg" id="intensitySeg">
+                <button onclick="setIntensity('Эконом')" id="iEco" data-i18n="intensity.eco">Эконом</button>
+                <button onclick="setIntensity('Баланс')" id="iBal" class="active" data-i18n="intensity.balance">Баланс</button>
+                <button onclick="setIntensity('Максимум')" id="iMax" data-i18n="intensity.max">Максимум</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sec-label" style="margin-bottom:6px;" data-i18n="modal.nodeBehavior">Поведение узла</div>
+          <div class="toggle-row">
+            <div class="tcol"><div class="tl" data-i18n="beh.autostart">Запускать узел при старте системы</div><div class="td" data-i18n="beh.autostartSub">АВТОЗАПУСК ФОНОВОЙ ДОБЫЧИ</div></div>
+            <div class="switch on" id="swAutostart" onclick="toggleSwitch('autostart')"><span class="kn"></span></div>
+          </div>
+          <div class="toggle-row">
+            <div class="tcol"><div class="tl" data-i18n="beh.night">Максимальная нагрузка пока сплю</div><div class="td" data-i18n="beh.nightSub">23:00–7:00 · НОЧНОЙ РЕЖИМ</div></div>
+            <div class="switch" id="swSleepMode" onclick="toggleSwitch('sleepMode')"><span class="kn"></span></div>
+          </div>
+          <div class="toggle-row">
+            <div class="tcol"><div class="tl" data-i18n="beh.yield">Снижать нагрузку во время запросов к ИИ</div><div class="td" data-i18n="beh.yieldSub">ПРИОРИТЕТ ОТЗЫВЧИВОСТИ ЧАТА</div></div>
+            <div class="switch on" id="swYieldChat" onclick="toggleSwitch('yieldChat')"><span class="kn"></span></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-foot" style="justify-content:space-between;">
+        <select id="langSelect" onchange="setLanguage(this.value)" style="
+          background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);
+          color:var(--ink);padding:6px 10px;font-size:12px;font-family:var(--font-ui);cursor:pointer;
+        ">
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="de">🇩🇪 Deutsch</option>
+        </select>
+        <div style="display:flex;gap:10px;">
+          <button class="btn ghost sm" onclick="closeLoad()" data-i18n="btn.close">Закрыть</button>
+          <button class="btn sm" onclick="applySettings()" data-i18n="btn.apply">Применить настройки</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="renderer.js"></script>
+</body>
+</html>
