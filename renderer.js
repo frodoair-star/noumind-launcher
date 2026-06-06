@@ -1102,6 +1102,12 @@ window.electronAPI.onFirstRunDone?.(() => {
   const o = el('onboarding'); if (o) o.style.display = 'none';
 });
 
+// Python не найден — показываем экран установки
+window.electronAPI.onShowInstallPython?.(() => {
+  const onboarding = el('onboarding'); if (onboarding) onboarding.style.display = 'none';
+  const screen = el('install-python-screen'); if (screen) screen.style.display = 'flex';
+});
+
 // Узел упал (watchdog исчерпал попытки)
 window.electronAPI.onNodeError?.((msg) => {
   if (el('balanceBanner')) {

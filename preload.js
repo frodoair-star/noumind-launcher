@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onFirstRunStart:    (cb) => ipcRenderer.on('first-run-start',    (e, d) => cb(d)),
   onFirstRunProgress: (cb) => ipcRenderer.on('first-run-progress', (e, d) => cb(d)),
   onFirstRunDone:     (cb) => ipcRenderer.on('first-run-done',     (e, d) => cb(d)),
+  onShowInstallPython: (cb) => ipcRenderer.on('show-install-python', (e, d) => cb(d)),
 
   // Узел упал / ошибка watchdog
   onNodeError:   (cb) => ipcRenderer.on('node-error',   (e, d) => cb(d)),
@@ -71,6 +72,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('first-run-start');
     ipcRenderer.removeAllListeners('first-run-progress');
     ipcRenderer.removeAllListeners('first-run-done');
+    ipcRenderer.removeAllListeners('show-install-python');
     ipcRenderer.removeAllListeners('node-error');
     ipcRenderer.removeAllListeners('node-stopped');
   }

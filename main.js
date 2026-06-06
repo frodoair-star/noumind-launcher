@@ -303,42 +303,140 @@ async function ensureNodeScript() {
 }
 
 // ─────────────────────────────────────────
-// ГЛАВНЫЙ FLOW — setupAndStart
+// ГЛАВНЫЙ FLOW — setupAndStart (ПРОСТОЙ)
 // ─────────────────────────────────────────
 
 async function setupAndStart() {
-  mainWindow?.webContents.send('first-run-start');
-  try {
-    // 1. Python
-    globalPythonExe = await ensurePython();
-    if (!globalPythonExe) {
-      mainWindow?.webContents.send('first-run-progress', {
-        step: 'Ошибка установки Python', percent: 0, error: true,
+  const send = (msg, pct) => {
+    console.log('[Setup]', msg);
+    try {
+      mainWindow.webContents.send('first-run-progress', {
+        step: msg, percent: pct || 0
       });
-      return;
-    }
+      mainWindow.webContents.send('node-log', msg);
+    } catch (e) {}
+  };
 
-    // 2. Зависимости
-    await ensureDependencies(globalPythonExe);
+  mainWindow.webContents.send('first-run-start');
+  send('Запуск...', 5);
 
-    // 3. Скрипты
-    const { scriptPath } = await ensureNodeScript();
-    globalScriptPath = scriptPath;
+  // Ищем Python в системе
+  const pythonCandidates = process.platform === 'win32'
+    ? ['python', 'python3', 'py',
+       'C:\\Python311\\python.exe',
+       'C:\\Python310\\python.exe',
+       'C:\\Python39\\python.exe',
+       path.join(os.homedir(), 'AppData', 'Local',
+         'Programs', 'Python', 'Python311', 'python.exe'),
+       path.join(os.homedir(), 'AppData', 'Local',
+         'Programs', 'Python', 'Python310', 'python.exe')]
+    : ['python3.11', 'python3', 'python',
+       '/usr/local/bin/python3.11',
+       '/usr/bin/python3'];
 
-    mainWindow?.webContents.send('first-run-progress', {
-      step: 'Всё готово! Запускаю узел...', percent: 95,
-    });
-
-    // 4. Запуск узла
-    await startNodeProcess();
-
-    mainWindow?.webContents.send('first-run-done');
-  } catch (e) {
-    console.error('[Setup] Ошибка:', e);
-    mainWindow?.webContents.send('first-run-progress', {
-      step: `Ошибка: ${e.message}`, percent: 0, error: true,
-    });
+  let pythonPath = null;
+  for (const p of pythonCandidates) {
+    try {
+      const ver = execSync(`"${p}" --version 2>&1`,
+        { timeout: 5000 }).toString().trim();
+      send(`✓ Python найден: ${ver}`, 20);
+      pythonPath = p;
+      break;
+    } catch (e) {}
   }
+
+  if (!pythonPath) {
+    send('✗ Python не найден!', 0);
+    send('Установи Python с python.org', 0);
+
+    // Открываем браузер с инструкцией
+    const { shell } = require('electron');
+    shell.openExternal('https://www.python.org/downloads/');
+
+    mainWindow.webContents.send('show-install-python');
+    return;
+  }
+
+  globalPythonExe = pythonPath;
+
+  // Создаём папку
+  const noumindDir = path.join(os.homedir(), 'noumind');
+  fs.mkdirSync(noumindDir, { recursive: true });
+  send(`✓ Папка: ${noumindDir}`, 30);
+
+  // Скачиваем скрипты
+  const files = ['node_pipeline.py', 'neuron.py'];
+  const BASE = 'https://raw.githubusercontent.com/' +
+    'frodoair-star/noumind/main/';
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const dest = path.join(noumindDir, file);
+
+    if (!fs.existsSync(dest)) {
+      send(`Скачиваю ${file}...`, 40 + i * 10);
+      try {
+        await downloadFile(BASE + file, dest, null);
+        send(`✓ ${file}`, 50 + i * 10);
+      } catch (e) {
+        send(`✗ Ошибка: ${file}: ${e.message}`, 0);
+      }
+    } else {
+      send(`✓ ${file} уже есть`, 50 + i * 10);
+    }
+  }
+
+  // Устанавливаем зависимости
+  send('Проверяю зависимости...', 65);
+  const deps = ['fastapi', 'uvicorn', 'httpx', 'psutil'];
+
+  for (const dep of deps) {
+    try {
+      execSync(`"${pythonPath}" -c "import ${dep}"`,
+        { timeout: 10000 });
+      send(`✓ ${dep}`, 70);
+    } catch (e) {
+      send(`Устанавливаю ${dep}...`, 70);
+      try {
+        execSync(
+          `"${pythonPath}" -m pip install ${dep} -q`,
+          { timeout: 120000 }
+        );
+        send(`✓ ${dep} установлен`, 75);
+      } catch (e2) {
+        send(`⚠ ${dep}: ${e2.message}`, 75);
+      }
+    }
+  }
+
+  // torch отдельно — большой пакет
+  send('Проверяю torch...', 80);
+  try {
+    execSync(`"${pythonPath}" -c "import torch"`,
+      { timeout: 10000 });
+    send('✓ torch', 85);
+  } catch (e) {
+    send('Устанавливаю torch (большой файл ~200MB)...', 80);
+    try {
+      execSync(
+        `"${pythonPath}" -m pip install torch --index-url https://download.pytorch.org/whl/cpu -q`,
+        { timeout: 600000 }
+      );
+      send('✓ torch установлен', 85);
+    } catch (e2) {
+      send(`⚠ torch: ${e2.message}`, 85);
+    }
+  }
+
+  globalScriptPath = path.join(noumindDir, 'node_pipeline.py');
+
+  send('Запускаю узел...', 95);
+  await startNodeProcess();
+
+  send('✓ Готово!', 100);
+  setTimeout(() => {
+    mainWindow.webContents.send('first-run-done');
+  }, 1000);
 }
 
 // ─────────────────────────────────────────

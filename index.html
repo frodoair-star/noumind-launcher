@@ -873,6 +873,36 @@ input[type=range].slider::-webkit-slider-thumb{-webkit-appearance:none;appearanc
     </div>
   </div>
 
+  <!-- Экран установки Python -->
+  <div id="install-python-screen" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f0f4f8;
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+  ">
+    <div style="font-size: 48px; margin-bottom: 16px;">🐍</div>
+    <h2 style="color: #1a2a3a; margin-bottom: 8px; font-size: 32px;">
+      Нужен Python
+    </h2>
+    <p style="color: #6b7280; margin-bottom: 24px; font-size: 16px;">
+      Браузер открылся на странице загрузки.<br>
+      Установи Python 3.11 и перезапусти uNeuro.
+    </p>
+    <p style="color: #d98a6a; font-weight: 600; font-size: 14px;">
+      ⚠️ При установке поставь галочку:<br>
+      "Add Python to PATH"
+    </p>
+  </div>
+
 </div>
 <script src="renderer.js"></script>
 </body>
