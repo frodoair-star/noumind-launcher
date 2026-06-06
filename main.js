@@ -408,7 +408,7 @@ async function setupAndStart() {
     try {
       await downloadFile(BASE + file, dest, null);
       const size = fs.statSync(dest).size;
-      if (size < 100) throw new Error('Файл пустой');
+      if (size < 500) throw new Error('Файл пустой');
       send(`✓ ${file} (${Math.round(size / 1024)}KB)`, 28 + i * 5);
     } catch (e) {
       send(`✗ Ошибка ${file}: ${e.message}`, 0);
@@ -651,7 +651,7 @@ function startNode(pythonExe, scriptPath, args) {
     `Запускаю: ${path.basename(pythonExe)} node_pipeline.py`);
 
   nodeProcess = spawn(pythonExe, finalArgs, {
-    env: { ...process.env, PYTHONUNBUFFERED: '1' }
+    env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' }
   });
 
   isNodeRunning = true;
