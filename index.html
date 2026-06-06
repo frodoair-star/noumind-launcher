@@ -855,6 +855,60 @@ input[type=range].slider::-webkit-slider-thumb{-webkit-appearance:none;appearanc
           </div>
         </div>
 
+        <div>
+          <div style="color:#eef2f8;font-size:14px;margin-bottom:12px;font-weight:600;border-top:1px solid #34507e;padding-top:20px;margin-top:20px;">
+            Узел сети
+          </div>
+
+          <!-- Gateway адрес -->
+          <div style="margin-bottom:12px;">
+            <div style="color:#8ba3cc;font-size:12px;margin-bottom:4px;">Gateway адрес</div>
+            <input id="settings-gateway" type="text"
+              value="http://217.160.49.222:8002"
+              style="
+                width:100%;background:#0d1b2e;border:1px solid #34507e;
+                border-radius:6px;color:#eef2f8;padding:8px 12px;
+                font-size:13px;box-sizing:border-box;
+              "
+            >
+          </div>
+
+          <!-- Worker ID -->
+          <div style="margin-bottom:12px;">
+            <div style="color:#8ba3cc;font-size:12px;margin-bottom:4px;">ID узла</div>
+            <input id="settings-worker-id" type="text"
+              placeholder="user-hostname (автоматически)"
+              style="
+                width:100%;background:#0d1b2e;border:1px solid #34507e;
+                border-radius:6px;color:#eef2f8;padding:8px 12px;
+                font-size:13px;box-sizing:border-box;
+              "
+            >
+          </div>
+
+          <!-- GPU toggle -->
+          <label style="display:flex;align-items:center;gap:10px;color:#eef2f8;font-size:14px;margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="settings-use-gpu" checked style="accent-color:#d98a6a;width:16px;height:16px;">
+            Использовать GPU если доступен
+          </label>
+
+          <!-- Автозапуск -->
+          <label style="display:flex;align-items:center;gap:10px;color:#eef2f8;font-size:14px;margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="settings-autostart" checked style="accent-color:#d98a6a;width:16px;height:16px;">
+            Запускать при старте системы
+          </label>
+
+          <!-- Кнопка переустановки -->
+          <button onclick="reinstallNode()" style="width:100%;padding:10px;background:transparent;border:1px solid #34507e;border-radius:8px;color:#8ba3cc;font-size:13px;cursor:pointer;margin-bottom:8px;">
+            🔄 Переустановить зависимости
+          </button>
+
+          <!-- Кнопка сброса gates -->
+          <button onclick="resetGates()" style="width:100%;padding:10px;background:transparent;border:1px solid #ef4444;border-radius:8px;color:#ef4444;font-size:13px;cursor:pointer;">
+            🗑 Сбросить EFCT gates
+          </button>
+        </div>
+
       </div>
       <div class="modal-foot" style="justify-content:space-between;">
         <select id="langSelect" onchange="setLanguage(this.value)" style="

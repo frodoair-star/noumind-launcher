@@ -879,6 +879,13 @@ ipcMain.on('save-settings', async (event, settings) => {
   console.log('[Main] Сохраняю настройки:', settings);
   userPreference = settings.loadPercent;
   currentLoad    = settings.loadPercent;
+
+  // Автозапуск
+  app.setLoginItemSettings({
+    openAtLogin: settings.autostart,
+    openAsHidden: true
+  });
+
   await setNodeLoadDynamic(settings.loadPercent);
   try {
     await fetch(
@@ -886,6 +893,58 @@ ipcMain.on('save-settings', async (event, settings) => {
       { method: 'POST' }
     );
   } catch (_) {}
+
+  // Gateway и worker_id передаём узлу при перезапуске
+  if (nodeProcess && settings.gateway) {
+    nodeProcess.kill();
+    setTimeout(() => {
+      startNodeWithSettings(settings);
+    }, 2000);
+  }
+});
+
+function startNodeWithSettings(settings) {
+  const hostname = os.hostname();
+  const workerId = settings.workerId || `user-${hostname}`;
+  const gateway = settings.gateway || 'http://217.160.49.222:8002';
+
+  const args = [
+    globalScriptPath,
+    '--worker-id', workerId,
+    '--gateway', gateway,
+    '--layer-start', String(settings.layerStart || 11),
+    '--load-pct', String(settings.loadPercent || 40)
+  ];
+
+  startNode(globalPythonExe, globalScriptPath, args);
+}
+
+ipcMain.on('reinstall-deps', async () => {
+  mainWindow.webContents.send('first-run-start');
+  mainWindow.webContents.send('node-log', 'Переустанавливаю зависимости...');
+
+  if (nodeProcess) {
+    nodeProcess.kill();
+    nodeProcess = null;
+  }
+
+  await setupAndStart();
+});
+
+ipcMain.on('reset-gates', () => {
+  const gatesPath = path.join(
+    os.homedir(), 'noumind',
+    `gates_${os.hostname()}.pt`
+  );
+  try {
+    if (fs.existsSync(gatesPath)) {
+      fs.unlinkSync(gatesPath);
+      console.log('[Gates] Сброшены:', gatesPath);
+      mainWindow.webContents.send('node-log', '✓ EFCT gates сброшены');
+    }
+  } catch (e) {
+    console.error('[Gates] Ошибка:', e.message);
+  }
 });
 
 ipcMain.on('sleep-mode', (event, enabled) => {

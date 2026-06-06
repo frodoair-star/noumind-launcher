@@ -1012,10 +1012,67 @@ function toggleSwitch(key) {
   el(ids[key])?.classList.toggle('on', switches[key]);
 }
 
-function applySettings() {
-  window.electronAPI.saveSettings(state.settings);
-  window.electronAPI.setSleepMode(state.settings.sleepMode);
+// Загружаем настройки при открытии панели
+function openSettings() {
+  const gateway = localStorage.getItem('gateway') ||
+    'http://217.160.49.222:8002';
+  const workerId = localStorage.getItem('worker_id') || '';
+  const useGpu = localStorage.getItem('use_gpu') !== 'false';
+  const autostart = localStorage.getItem('autostart') !== 'false';
+
+  if (el('settings-gateway')) el('settings-gateway').value = gateway;
+  if (el('settings-worker-id')) el('settings-worker-id').value = workerId;
+  if (el('settings-use-gpu')) el('settings-use-gpu').checked = useGpu;
+  if (el('settings-autostart')) el('settings-autostart').checked = autostart;
+
+  if (el('load-modal')) el('load-modal').style.display = 'flex';
+  if (el('load-overlay')) el('load-overlay').style.display = 'block';
+}
+
+// Сохраняем все настройки
+function saveSettings() {
+  const gateway = (el('settings-gateway')?.value || '').trim();
+  const workerId = (el('settings-worker-id')?.value || '').trim();
+  const useGpu = el('settings-use-gpu')?.checked || true;
+  const autostart = el('settings-autostart')?.checked || true;
+  const loadPct = parseInt(el('load-slider')?.value || 40);
+
+  localStorage.setItem('gateway', gateway);
+  localStorage.setItem('worker_id', workerId);
+  localStorage.setItem('use_gpu', useGpu);
+  localStorage.setItem('autostart', autostart);
+
+  window.electronAPI.saveSettings({
+    loadPercent: loadPct,
+    layerStart: state.settings.layerStart,
+    sleepMode: state.settings.sleepMode,
+    gateway: gateway,
+    workerId: workerId,
+    useGpu: useGpu,
+    autostart: autostart
+  });
+
   closeLoad();
+}
+
+// Переустановить зависимости
+function reinstallNode() {
+  if (confirm('Переустановить все зависимости? Займёт несколько минут.')) {
+    closeLoad();
+    window.electronAPI.reinstallDeps();
+  }
+}
+
+// Сбросить EFCT gates
+function resetGates() {
+  if (confirm('Сбросить EFCT gates? Узел начнёт обучение заново.')) {
+    window.electronAPI.resetGates();
+    alert('Gates сброшены. Перезапусти узел.');
+  }
+}
+
+function applySettings() {
+  saveSettings();
 }
 
 // ─────────────────────────────────────────

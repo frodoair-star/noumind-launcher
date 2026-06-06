@@ -41,6 +41,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLoadChanged:  (cb) => ipcRenderer.on('load-changed',  (e, d) => cb(d)),
   saveSettings:   (s)  => ipcRenderer.send('save-settings', s),
   setSleepMode:   (en) => ipcRenderer.send('sleep-mode', en),
+  reinstallDeps:  ()   => ipcRenderer.send('reinstall-deps'),
+  resetGates:     ()   => ipcRenderer.send('reset-gates'),
 
   // Автообновление
   onUpdateAvailable:  (cb) => ipcRenderer.on('update-available',  (e, d) => cb(d)),
