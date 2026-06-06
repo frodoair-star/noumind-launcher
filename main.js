@@ -85,41 +85,60 @@ function calcFromPercent(pct) {
 // ─────────────────────────────────────────
 
 function downloadFile(url, dest, onProgress) {
-  const { net } = require('electron');
   return new Promise((resolve, reject) => {
-    const request = net.request(url);
-    let file = fs.createWriteStream(dest);
-    let downloaded = 0;
-    let total      = 0;
+    const follow = (currentUrl) => {
+      console.log('[Download] GET:', currentUrl);
 
-    request.on('response', (response) => {
-      // GitHub releases делают редирект — следуем
-      if (response.statusCode >= 300 && response.statusCode < 400) {
-        const location = Array.isArray(response.headers.location)
-          ? response.headers.location[0]
-          : response.headers.location;
-        file.close();
-        try { fs.unlinkSync(dest); } catch (_) {}
-        return downloadFile(location, dest, onProgress).then(resolve).catch(reject);
-      }
-      if (response.statusCode !== 200) {
-        reject(new Error(`HTTP ${response.statusCode} for ${url}`));
-        return;
-      }
-      total = parseInt(response.headers['content-length'] || '0', 10);
+      const proto = currentUrl.startsWith('https')
+        ? require('https')
+        : require('http');
 
-      response.on('data', (chunk) => {
-        file.write(chunk);
-        downloaded += chunk.length;
-        if (total > 0 && onProgress) {
-          onProgress(Math.round(downloaded / total * 100));
+      proto.get(currentUrl, (res) => {
+        // Следуем редиректам
+        if (res.statusCode === 301 ||
+            res.statusCode === 302 ||
+            res.statusCode === 303) {
+          console.log('[Download] Редирект на:', res.headers.location);
+          follow(res.headers.location);
+          return;
         }
-      });
-      response.on('end',   () => { file.end(); resolve(); });
-      response.on('error', reject);
-    });
-    request.on('error', reject);
-    request.end();
+
+        if (res.statusCode !== 200) {
+          reject(new Error(
+            `HTTP ${res.statusCode} for ${currentUrl}`
+          ));
+          return;
+        }
+
+        const total = parseInt(
+          res.headers['content-length'] || '0'
+        );
+        console.log('[Download] Размер:', total, 'bytes');
+
+        let downloaded = 0;
+        const file = fs.createWriteStream(dest);
+
+        res.on('data', (chunk) => {
+          file.write(chunk);
+          downloaded += chunk.length;
+          if (total > 0 && onProgress) {
+            onProgress(Math.round(
+              downloaded / total * 100
+            ));
+          }
+        });
+
+        res.on('end', () => {
+          file.end();
+          console.log('[Download] Завершено:', dest);
+          resolve();
+        });
+
+        res.on('error', reject);
+      }).on('error', reject);
+    };
+
+    follow(url);
   });
 }
 
@@ -141,14 +160,27 @@ async function extractTar(tarPath, destDir) {
 // ─────────────────────────────────────────
 
 async function ensurePython() {
-  const appData   = app.getPath('userData');
-  const pythonDir = path.join(appData, 'python');
+  const userData = app.getPath('userData');
+  console.log('[Python] userData path:', userData);
+  console.log('[Python] platform:', process.platform, process.arch);
+
+  mainWindow?.webContents.send('node-log', `Путь данных: ${userData}`);
+  mainWindow?.webContents.send('node-log', `Платформа: ${process.platform} ${process.arch}`);
+
+  const pythonDir = path.join(userData, 'python');
   const pythonExe = process.platform === 'win32'
     ? path.join(pythonDir, 'python', 'python.exe')
     : path.join(pythonDir, 'python', 'bin', 'python3.11');
 
+  console.log('[Python] pythonExe path:', pythonExe);
+  console.log('[Python] exists:', fs.existsSync(pythonExe));
+
+  mainWindow?.webContents.send('node-log', `Python путь: ${pythonExe}`);
+  mainWindow?.webContents.send('node-log', `Python существует: ${fs.existsSync(pythonExe)}`);
+
   if (fs.existsSync(pythonExe)) {
     console.log('[Python] Уже установлен:', pythonExe);
+    mainWindow?.webContents.send('node-log', '✓ Python найден');
     return pythonExe;
   }
 
@@ -156,16 +188,26 @@ async function ensurePython() {
   const url = PYTHON_URLS[key];
   if (!url) {
     console.error('[Python] Неподдерживаемая платформа:', key);
+    mainWindow?.webContents.send('node-log', `❌ Платформа не поддерживается: ${key}`);
     return null;
   }
 
+  console.log('[Python] Скачиваю с:', url);
   mainWindow?.webContents.send('node-log', 'Устанавливаю Python 3.11 (первый запуск)...');
   mainWindow?.webContents.send('first-run-progress', {
     step: 'Скачиваю Python 3.11...', percent: 10,
   });
 
-  fs.mkdirSync(pythonDir, { recursive: true });
+  try {
+    fs.mkdirSync(pythonDir, { recursive: true });
+    console.log('[Python] Папка создана:', pythonDir);
+  } catch (e) {
+    console.error('[Python] Ошибка создания папки:', e.message);
+    throw e;
+  }
+
   const tarPath = path.join(pythonDir, 'python.tar.gz');
+  console.log('[Python] Скачиваю в:', tarPath);
 
   await downloadFile(url, tarPath, (progress) => {
     mainWindow?.webContents.send('first-run-progress', {
@@ -174,13 +216,18 @@ async function ensurePython() {
     });
   });
 
+  console.log('[Python] Скачано, распаковываю...');
   mainWindow?.webContents.send('first-run-progress', {
     step: 'Распаковываю Python...', percent: 45,
   });
+
   await extractTar(tarPath, pythonDir);
+  console.log('[Python] Распаковано');
+
   try { fs.unlinkSync(tarPath); } catch (_) {}
 
   console.log('[Python] Установлен:', pythonExe);
+  mainWindow?.webContents.send('node-log', '✓ Python установлен');
   return pythonExe;
 }
 
@@ -765,7 +812,7 @@ async function registerNodeInGateway(nodePort) {
 // ЖИЗНЕННЫЙ ЦИКЛ ELECTRON
 // ─────────────────────────────────────────
 
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   console.log('[Main] Приложение готово');
   createWindow();
   createTray();
@@ -805,8 +852,27 @@ app.on('ready', async () => {
     }
   }, 30000);
 
-  // setupAndStart() вызывается из did-finish-load внутри createWindow()
-  console.log('[Main] Ожидаю загрузки UI для запуска auto-setup...');
+  // Ждём пока окно полностью загрузится
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  mainWindow.webContents.once('did-finish-load', () => {
+    console.log('[Main] DOM ready, starting setup in 3s...');
+    console.log('[Main] userData:', app.getPath('userData'));
+    console.log('[Main] platform:', process.platform);
+
+    setTimeout(async () => {
+      console.log('[Main] Starting setupAndStart...');
+      try {
+        await setupAndStart();
+      } catch (e) {
+        console.error('[Main] FATAL:', e.message, e.stack);
+        mainWindow.webContents.send('node-log',
+          '💥 КРИТИЧЕСКАЯ ОШИБКА: ' + e.message);
+      }
+    }, 3000);
+  });
 });
 
 app.on('window-all-closed', () => {
