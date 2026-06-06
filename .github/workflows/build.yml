@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -15,24 +18,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - name: Install dependencies (with retry)
-        run: |
-          npm install --prefer-offline || \
-          npm install --prefer-offline || \
-          npm install
-        shell: bash
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build Windows
-        run: npm run build:win
+        run: npx electron-builder --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            dist/*.exe
+          files: dist/*.exe
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -45,9 +45,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Mac
         run: npm run build:mac
@@ -58,7 +59,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/uNeuro-*.dmg
-            dist/uNeuro-*.zip
+            dist/*.dmg
+            dist/*.zip
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
