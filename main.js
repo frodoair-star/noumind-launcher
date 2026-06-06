@@ -318,125 +318,237 @@ async function setupAndStart() {
   };
 
   mainWindow.webContents.send('first-run-start');
-  send('Запуск...', 5);
+  send('Запуск...', 2);
 
-  // Ищем Python в системе
-  const pythonCandidates = process.platform === 'win32'
-    ? ['python', 'python3', 'py',
-       'C:\\Python311\\python.exe',
-       'C:\\Python310\\python.exe',
-       'C:\\Python39\\python.exe',
-       path.join(os.homedir(), 'AppData', 'Local',
-         'Programs', 'Python', 'Python311', 'python.exe'),
-       path.join(os.homedir(), 'AppData', 'Local',
-         'Programs', 'Python', 'Python310', 'python.exe')]
-    : ['python3.11', 'python3', 'python',
-       '/usr/local/bin/python3.11',
-       '/usr/bin/python3'];
+  // ШАГ 1: Найти Python
+  send('Ищу Python...', 5);
+  const candidates = process.platform === 'win32'
+    ? [
+        'python',
+        'python3',
+        'py',
+        path.join(os.homedir(), 'AppData', 'Local',
+          'Programs', 'Python', 'Python313', 'python.exe'),
+        path.join(os.homedir(), 'AppData', 'Local',
+          'Programs', 'Python', 'Python312', 'python.exe'),
+        path.join(os.homedir(), 'AppData', 'Local',
+          'Programs', 'Python', 'Python311', 'python.exe'),
+        path.join(os.homedir(), 'AppData', 'Local',
+          'Programs', 'Python', 'Python310', 'python.exe'),
+      ]
+    : [
+        'python3.11', 'python3', 'python',
+        '/usr/local/bin/python3',
+        '/opt/homebrew/bin/python3',
+      ];
 
   let pythonPath = null;
-  for (const p of pythonCandidates) {
+  for (const p of candidates) {
     try {
-      const ver = execSync(`"${p}" --version 2>&1`,
-        { timeout: 5000 }).toString().trim();
-      send(`✓ Python найден: ${ver}`, 20);
+      const ver = execSync(
+        `"${p}" --version`,
+        { timeout: 5000, stdio: 'pipe' }
+      ).toString().trim();
+      send(`✓ Python: ${ver}`, 10);
       pythonPath = p;
       break;
     } catch (e) {}
   }
 
   if (!pythonPath) {
-    send('✗ Python не найден!', 0);
-    send('Установи Python с python.org', 0);
+    send('Python не найден. Скачиваю...', 10);
+    pythonPath = await downloadPortablePython(send);
+  }
 
-    // Открываем браузер с инструкцией
-    const { shell } = require('electron');
-    shell.openExternal('https://www.python.org/downloads/');
-
-    mainWindow.webContents.send('show-install-python');
+  if (!pythonPath) {
+    send('✗ Не удалось установить Python', 0);
     return;
   }
 
   globalPythonExe = pythonPath;
 
-  // Создаём папку
+  // ШАГ 2: Убить старый процесс на порту 9002
+  send('Проверяю порт 9002...', 15);
+  try {
+    if (process.platform === 'win32') {
+      const result = execSync(
+        'netstat -ano | findstr :9002',
+        { timeout: 5000, stdio: 'pipe' }
+      ).toString();
+      const lines = result.split('\n');
+      for (const line of lines) {
+        if (line.includes('LISTENING')) {
+          const pid = line.trim().split(/\s+/).pop();
+          if (pid && pid !== '0') {
+            execSync(`taskkill /PID ${pid} /F`,
+              { timeout: 5000 });
+            send(`✓ Старый процесс (PID ${pid}) закрыт`, 18);
+          }
+        }
+      }
+    } else {
+      execSync('lsof -ti:9002 | xargs kill -9 2>/dev/null || true',
+        { timeout: 5000 });
+    }
+  } catch (e) {}
+
+  // ШАГ 3: Создать папку и скачать файлы
+  send('Подготавливаю файлы...', 20);
   const noumindDir = path.join(os.homedir(), 'noumind');
   fs.mkdirSync(noumindDir, { recursive: true });
-  send(`✓ Папка: ${noumindDir}`, 30);
 
-  // Скачиваем скрипты
-  const files = ['node_pipeline.py', 'neuron.py'];
   const BASE = 'https://raw.githubusercontent.com/' +
     'frodoair-star/noumind/main/';
+  const files = ['node_pipeline.py', 'neuron.py'];
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const dest = path.join(noumindDir, file);
-
-    if (!fs.existsSync(dest)) {
-      send(`Скачиваю ${file}...`, 40 + i * 10);
-      try {
-        await downloadFile(BASE + file, dest, null);
-        send(`✓ ${file}`, 50 + i * 10);
-      } catch (e) {
-        send(`✗ Ошибка: ${file}: ${e.message}`, 0);
-      }
-    } else {
-      send(`✓ ${file} уже есть`, 50 + i * 10);
+    send(`Скачиваю ${file}...`, 25 + i * 5);
+    try {
+      await downloadFile(BASE + file, dest, null);
+      const size = fs.statSync(dest).size;
+      if (size < 100) throw new Error('Файл пустой');
+      send(`✓ ${file} (${Math.round(size / 1024)}KB)`, 28 + i * 5);
+    } catch (e) {
+      send(`✗ Ошибка ${file}: ${e.message}`, 0);
     }
   }
 
-  // Устанавливаем зависимости
-  send('Проверяю зависимости...', 65);
-  const deps = ['fastapi', 'uvicorn', 'httpx', 'psutil'];
+  // ШАГ 4: Проверить NVIDIA GPU
+  send('Проверяю GPU...', 35);
+  let hasNvidia = false;
+  try {
+    execSync('nvidia-smi', { timeout: 5000, stdio: 'pipe' });
+    hasNvidia = true;
+    send('✓ NVIDIA GPU найден', 37);
+  } catch (e) {
+    send('GPU не найден — используем CPU', 37);
+  }
 
-  for (const dep of deps) {
+  // ШАГ 5: Установить зависимости
+  const deps = ['numpy', 'httpx', 'fastapi',
+                'uvicorn', 'psutil', 'transformers',
+                'accelerate'];
+
+  for (let i = 0; i < deps.length; i++) {
+    const dep = deps[i];
+    const pct = 40 + Math.round(i / deps.length * 25);
     try {
       execSync(`"${pythonPath}" -c "import ${dep}"`,
-        { timeout: 10000 });
-      send(`✓ ${dep}`, 70);
+        { timeout: 10000, stdio: 'pipe' });
+      send(`✓ ${dep}`, pct);
     } catch (e) {
-      send(`Устанавливаю ${dep}...`, 70);
+      send(`Устанавливаю ${dep}...`, pct);
       try {
         execSync(
           `"${pythonPath}" -m pip install ${dep} -q`,
-          { timeout: 120000 }
+          { timeout: 300000, stdio: 'pipe' }
         );
-        send(`✓ ${dep} установлен`, 75);
+        send(`✓ ${dep}`, pct);
       } catch (e2) {
-        send(`⚠ ${dep}: ${e2.message}`, 75);
+        send(`⚠ ${dep}: пропускаю`, pct);
       }
     }
   }
 
-  // torch отдельно — большой пакет
-  send('Проверяю torch...', 80);
+  // ШАГ 6: Установить torch (CPU или CUDA)
+  send('Проверяю torch...', 67);
+  let torchOk = false;
   try {
-    execSync(`"${pythonPath}" -c "import torch"`,
-      { timeout: 10000 });
-    send('✓ torch', 85);
+    const cudaOk = execSync(
+      `"${pythonPath}" -c "import torch; print(torch.cuda.is_available())"`,
+      { timeout: 15000, stdio: 'pipe' }
+    ).toString().trim();
+
+    if (hasNvidia && cudaOk === 'False') {
+      send('Переустанавливаю torch для GPU...', 68);
+      execSync(
+        `"${pythonPath}" -m pip uninstall torch -y`,
+        { timeout: 30000, stdio: 'pipe' }
+      );
+      throw new Error('need cuda');
+    }
+    send(`✓ torch (CUDA: ${cudaOk})`, 70);
+    torchOk = true;
   } catch (e) {
-    send('Устанавливаю torch (большой файл ~200MB)...', 80);
+    const url = hasNvidia
+      ? 'https://download.pytorch.org/whl/cu118'
+      : 'https://download.pytorch.org/whl/cpu';
+    const label = hasNvidia ? 'CUDA (~2.8GB)' : 'CPU (~200MB)';
+    send(`Скачиваю torch ${label}...`, 68);
     try {
       execSync(
-        `"${pythonPath}" -m pip install torch --index-url https://download.pytorch.org/whl/cpu -q`,
-        { timeout: 600000 }
+        `"${pythonPath}" -m pip install torch ` +
+        `--index-url ${url} -q`,
+        { timeout: 900000, stdio: 'pipe' }
       );
-      send('✓ torch установлен', 85);
+      send('✓ torch установлен', 80);
+      torchOk = true;
     } catch (e2) {
-      send(`⚠ torch: ${e2.message}`, 85);
+      send(`⚠ torch: ${e2.message}`, 80);
     }
   }
 
+  // ШАГ 7: Запустить узел
   globalScriptPath = path.join(noumindDir, 'node_pipeline.py');
-
   send('Запускаю узел...', 95);
-  await startNodeProcess();
+  startNode(globalPythonExe, globalScriptPath);
 
-  send('✓ Готово!', 100);
+  send('✓ Всё готово!', 100);
   setTimeout(() => {
     mainWindow.webContents.send('first-run-done');
-  }, 1000);
+  }, 1500);
+}
+
+async function downloadPortablePython(send) {
+  const userData = app.getPath('userData');
+  const pythonDir = path.join(userData, 'python');
+
+  const exe = process.platform === 'win32'
+    ? path.join(pythonDir, 'python', 'python.exe')
+    : path.join(pythonDir, 'python', 'bin', 'python3');
+
+  if (fs.existsSync(exe)) return exe;
+
+  fs.mkdirSync(pythonDir, { recursive: true });
+
+  const urls = {
+    'win32-x64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz',
+    'darwin-arm64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-aarch64-apple-darwin-install_only_stripped.tar.gz',
+    'darwin-x64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-x86_64-apple-darwin-install_only_stripped.tar.gz'
+  };
+
+  const key = `${process.platform}-${process.arch}`;
+  const url = urls[key];
+  if (!url) return null;
+
+  send('Скачиваю Python 3.11...', 12);
+  const tarPath = path.join(pythonDir, 'python.tar.gz');
+
+  try {
+    await downloadFile(url, tarPath, (pct) => {
+      send(`Скачиваю Python... ${pct}%`, 12);
+    });
+
+    send('Распаковываю Python...', 14);
+    if (process.platform === 'win32') {
+      const tar = require('tar');
+      await tar.extract({ file: tarPath, cwd: pythonDir });
+    } else {
+      execSync(`tar -xzf "${tarPath}" -C "${pythonDir}"`);
+    }
+
+    try { fs.unlinkSync(tarPath); } catch (e) {}
+
+    if (fs.existsSync(exe)) {
+      send('✓ Python установлен', 15);
+      return exe;
+    }
+  } catch (e) {
+    send(`✗ Ошибка Python: ${e.message}`, 0);
+  }
+  return null;
 }
 
 // ─────────────────────────────────────────
@@ -511,143 +623,82 @@ function killPortProcess(port) {
 // ЗАПУСК PYTHON УЗЛА
 // ─────────────────────────────────────────
 
+function startNode(pythonExe, scriptPath, args) {
+  if (!pythonExe || !scriptPath) {
+    console.error('[Node] pythonExe или scriptPath не задан');
+    return;
+  }
+
+  if (!fs.existsSync(scriptPath)) {
+    console.error('[Node] Скрипт не найден:', scriptPath);
+    mainWindow.webContents.send('node-log',
+      `✗ Файл не найден: ${scriptPath}`);
+    return;
+  }
+
+  const defaultArgs = [
+    scriptPath,
+    '--worker-id', `user-${os.hostname()}`,
+    '--gateway', 'http://217.160.49.222:8002',
+    '--layer-start', '11',
+    '--load-pct', '40'
+  ];
+
+  const finalArgs = args || defaultArgs;
+
+  console.log('[Node] Запуск:', pythonExe, finalArgs[0]);
+  mainWindow.webContents.send('node-log',
+    `Запускаю: ${path.basename(pythonExe)} node_pipeline.py`);
+
+  nodeProcess = spawn(pythonExe, finalArgs, {
+    env: { ...process.env, PYTHONUNBUFFERED: '1' }
+  });
+
+  isNodeRunning = true;
+  nodeRestartCount = 0;
+
+  nodeProcess.stdout.on('data', (d) => {
+    const msg = d.toString().trim();
+    if (msg) {
+      console.log('[Node]', msg);
+      mainWindow.webContents.send('node-log', msg);
+    }
+  });
+
+  nodeProcess.stderr.on('data', (d) => {
+    const msg = d.toString().trim();
+    if (msg && !msg.includes('UserWarning') &&
+        !msg.includes('deprecated')) {
+      console.error('[Node ERR]', msg);
+      mainWindow.webContents.send('node-log', '⚠ ' + msg);
+    }
+  });
+
+  nodeProcess.on('error', (err) => {
+    mainWindow.webContents.send('node-log',
+      `✗ Ошибка запуска: ${err.message}`);
+  });
+
+  nodeProcess.on('exit', (code) => {
+    console.log('[Node] Завершился с кодом', code);
+    if (code !== 0 && !app.isQuitting) {
+      mainWindow.webContents.send('node-log',
+        `Узел упал (код ${code}), перезапуск через 10 сек...`);
+      setTimeout(() => startNode(pythonExe, scriptPath), 10000);
+    }
+  });
+}
+
 async function startNodeProcess() {
   if (isNodeRunning || nodeProcess) {
     console.log('[Main] Node уже запущен');
     return;
   }
+  await startNodeProcess_internal();
+}
 
-  const pythonExe  = globalPythonExe;
-  const scriptPath = globalScriptPath;
-
-  if (!pythonExe || !scriptPath || !fs.existsSync(scriptPath)) {
-    console.error('[Main] Python или скрипт не готовы — пропускаю запуск');
-    mainWindow?.webContents.send('node-status', {
-      status: 'unavailable',
-      message: 'Идёт установка. Подождите...',
-      isRunning: false,
-    });
-    return;
-  }
-
-  await killPortProcess(NODE_PORT);
-  console.log('[Main] Запускаю node_pipeline.py...');
-
-  const env = Object.assign({}, process.env, {
-    KMP_DUPLICATE_LIB_OK: 'TRUE',
-    OMP_NUM_THREADS:      '4',
-    PYTHONUNBUFFERED:     '1',
-  });
-
-  const workerId   = `user-${os.hostname()}`;
-  const noumindDir = path.dirname(scriptPath);
-  console.log(`[Main] Python: ${pythonExe}, worker: ${workerId}, layer-start: ${nodeSettings.layerStart}, load-pct: ${nodeSettings.loadPercent}`);
-
-  nodeProcess = spawn(pythonExe, [
-    scriptPath,
-    '--worker-id',   workerId,
-    '--gateway',     'http://217.160.49.222:8002',
-    '--port',        String(NODE_PORT),
-    '--layer-start', String(nodeSettings.layerStart),
-    '--load-pct',    String(nodeSettings.loadPercent),
-  ], {
-    cwd: noumindDir,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    detached: false,
-    env,
-  });
-
-  isNodeRunning = true;
-  console.log(`[Main] Node PID: ${nodeProcess.pid}`);
-
-  let modelLoadedSent = false;
-
-  // Проверяем готовность через HTTP каждую секунду
-  const readinessCheckInterval = setInterval(async () => {
-    if (modelLoadedSent) { clearInterval(readinessCheckInterval); return; }
-    try {
-      const response = await fetch('http://localhost:9002/health');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === 'ready') {
-          modelLoadedSent = true;
-          nodeRestartCount = 0;
-          clearInterval(readinessCheckInterval);
-          console.log('[Main] ✓✓✓ HTTP: узел ГОТОВ!');
-          mainWindow?.webContents.send('node-status', {
-            status: 'ready', message: '✓ Узел активен', isRunning: true,
-          });
-          registerNodeInGateway(NODE_PORT);
-        }
-      }
-    } catch (_) {}
-  }, 1000);
-
-  // Резервная проверка по stdout
-  const checkReady = (msg) => {
-    if (!modelLoadedSent && (
-      msg.includes('✓ Model loaded')  ||
-      msg.includes('Model loaded')    ||
-      msg.includes('EFCT phase gates') ||
-      msg.includes('Ready to serve')
-    )) {
-      modelLoadedSent = true;
-      clearInterval(readinessCheckInterval);
-      console.log('[Main] ✓✓✓ Stdout: узел готов!');
-      mainWindow?.webContents.send('node-status', {
-        status: 'ready', message: '✓ Узел активен', isRunning: true,
-      });
-    }
-  };
-
-  nodeProcess.stdout?.on('data', (data) => {
-    const msg = data.toString();
-    console.log('[Node]', msg.trim());
-    mainWindow?.webContents.send('node-log', { message: msg.trim() });
-    checkReady(msg);
-  });
-
-  nodeProcess.stderr?.on('data', (data) => {
-    const msg = data.toString();
-    console.error('[Node ERR]', msg.trim());
-    mainWindow?.webContents.send('node-log', { message: msg.trim(), isError: true });
-    checkReady(msg);
-  });
-
-  nodeProcess.on('close', (code) => {
-    console.log(`[Main] Node завершён (код: ${code})`);
-    isNodeRunning = false;
-    nodeProcess   = null;
-    clearInterval(readinessCheckInterval);
-    mainWindow?.webContents.send('node-status', {
-      status: 'stopped', message: 'Узел выключен', isRunning: false,
-    });
-
-    // Watchdog — автоперезапуск при аварийном падении
-    if (code !== 0 && code !== null && !app.isQuitting) {
-      if (nodeRestartCount >= MAX_RESTARTS) {
-        console.error(`[Watchdog] Узел упал ${MAX_RESTARTS} раз — сдаюсь`);
-        mainWindow?.webContents.send('node-error', 'Узел не запускается. Перезапусти приложение.');
-        return;
-      }
-      nodeRestartCount++;
-      console.log(`[Watchdog] Перезапуск ${nodeRestartCount}/${MAX_RESTARTS} через 5 сек...`);
-      setTimeout(() => startNodeProcess(), 5000);
-    }
-  });
-
-  nodeProcess.on('error', (err) => {
-    console.error('[Main] Ошибка запуска Node:', err);
-    isNodeRunning = false;
-    nodeProcess   = null;
-    mainWindow?.webContents.send('node-status', {
-      status: 'error', message: `Ошибка: ${err.message}`, isRunning: false,
-    });
-  });
-
-  mainWindow?.webContents.send('node-status', {
-    status: 'loading', message: 'Загружаю модель...', isRunning: true,
-  });
+async function startNodeProcess_internal() {
+  startNode(globalPythonExe, globalScriptPath);
 }
 
 // ─────────────────────────────────────────
