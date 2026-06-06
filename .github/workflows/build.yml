@@ -16,8 +16,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (with retry)
+        run: |
+          npm install --prefer-offline || \
+          npm install --prefer-offline || \
+          npm install
+        shell: bash
 
       - name: Build Windows
         run: npm run build:win
@@ -28,8 +32,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/uNeuro-Setup-*.exe
-            dist/uNeuro-Portable-*.exe
+            dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
