@@ -13,10 +13,10 @@ try { autoUpdater = require('electron-updater').autoUpdater; } catch { /* dev mo
 // ─────────────────────────────────────────
 
 const PYTHON_URLS = {
-  'win32-x64': 'https://github.com/indygreg/python-build-standalone/releases/download/20240814/cpython-3.11.10+20240814-x86_64-pc-windows-msvc-install_only.tar.gz',
-  'win32-arm64': 'https://github.com/indygreg/python-build-standalone/releases/download/20240814/cpython-3.11.10+20240814-aarch64-pc-windows-msvc-install_only.tar.gz',
-  'darwin-arm64': 'https://github.com/indygreg/python-build-standalone/releases/download/20240814/cpython-3.11.10+20240814-aarch64-apple-darwin-install_only.tar.gz',
-  'darwin-x64': 'https://github.com/indygreg/python-build-standalone/releases/download/20240814/cpython-3.11.10+20240814-x86_64-apple-darwin-install_only.tar.gz'
+  'win32-x64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz',
+  'win32-arm64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-aarch64-pc-windows-msvc-install_only_stripped.tar.gz',
+  'darwin-arm64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-aarch64-apple-darwin-install_only_stripped.tar.gz',
+  'darwin-x64': 'https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-x86_64-apple-darwin-install_only_stripped.tar.gz'
 };
 
 // Глобальные пути — заполняются в setupAndStart()
