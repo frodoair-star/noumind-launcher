@@ -603,13 +603,13 @@ function createWindow() {
     }
   });
 
-  // После загрузки страницы: железо → полный setup
+  // После загрузки страницы: отправляем инфо о железе
+  // (setupAndStart запускается из app.whenReady с задержкой 3с)
   mainWindow.webContents.on('did-finish-load', async () => {
     const hw = await detectHardware();
     detectedHardware = hw;
     console.log('[Main] Железо:', hw);
     mainWindow?.webContents.send('hardware-info', hw);
-    setupAndStart();   // <— заменяет старый checkFirstRun
   });
 }
 

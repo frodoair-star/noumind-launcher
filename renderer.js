@@ -664,7 +664,7 @@ setInterval(async () => {
     if (el('efctGatesNonzero')) el('efctGatesNonzero').textContent = `${gates}/2048`;
     if (el('efctBaseline'))     el('efctBaseline').textContent     = base.toFixed(6);
     if (el('efctStatus')) {
-      const labels = { gpu: '🟢 GPU', fast_cpu: '🟡 Fast CPU', slow_cpu: '🔴 CPU' };
+      const labels = { gpu: '🟢 GPU', fast_cpu: '🟡 Быстрый CPU', slow_cpu: '🔴 Медленный CPU' };
       const tl = labels[tier] || tier;
       el('efctStatus').textContent = growing
         ? `🧠 обучаюсь… · ${tl}`
@@ -916,7 +916,7 @@ async function sendMessage() {
         tokensOut: Math.round(reply.length / 3.4),
         streaming: false,
         computeCost: data.compute_cost,
-        tierLabel: ({ gpu:'🟢 GPU', fast_cpu:'🟡 Fast CPU', slow_cpu:'🔴 CPU' }[data.tier] || ''),
+        tierLabel: ({ gpu:'🟢 GPU', fast_cpu:'🟡 Быстрый CPU', slow_cpu:'🔴 Медленный CPU' }[data.tier] || ''),
         priority: state.selectedMode,
       });
     } catch (e) {
