@@ -289,7 +289,7 @@ async function ensureNodeScript() {
   fs.mkdirSync(noumindDir, { recursive: true });
 
   const BASE_URL = 'https://raw.githubusercontent.com/frodoair-star/noumind/main/';
-  const files    = ['node_pipeline.py', 'neuron.py'];
+  const files    = ['node_airllm.py', 'node_pipeline.py', 'neuron.py'];
 
   for (const file of files) {
     const filePath = path.join(noumindDir, file);
@@ -305,7 +305,7 @@ async function ensureNodeScript() {
   }
 
   return {
-    scriptPath:  path.join(noumindDir, 'node_pipeline.py'),
+    scriptPath:  path.join(noumindDir, 'node_airllm.py'),
     noumindDir,
   };
 }
@@ -407,17 +407,17 @@ async function setupAndStart() {
 
   const BASE = 'https://raw.githubusercontent.com/' +
     'frodoair-star/noumind/main/';
-  const files = ['node_pipeline.py', 'neuron.py'];
+  const files = ['node_airllm.py', 'node_pipeline.py', 'neuron.py'];
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const dest = path.join(noumindDir, file);
-    send(`Скачиваю ${file}...`, 25 + i * 5);
+    send(`Скачиваю ${file}...`, 25 + i * 3);
     try {
       await downloadFile(BASE + file, dest, null);
       const size = fs.statSync(dest).size;
       if (size < 500) throw new Error('Файл пустой');
-      send(`✓ ${file} (${Math.round(size / 1024)}KB)`, 28 + i * 5);
+      send(`✓ ${file} (${Math.round(size / 1024)}KB)`, 28 + i * 3);
     } catch (e) {
       send(`✗ Ошибка ${file}: ${e.message}`, 0);
     }
@@ -441,7 +441,7 @@ async function setupAndStart() {
 
   for (let i = 0; i < deps.length; i++) {
     const dep = deps[i];
-    const pct = 40 + Math.round(i / deps.length * 25);
+    const pct = 40 + Math.round(i / deps.length * 20);
     try {
       execSync(`"${pythonPath}" -c "import ${dep}"`,
         { timeout: 10000, stdio: 'pipe' });
@@ -457,6 +457,23 @@ async function setupAndStart() {
       } catch (e2) {
         send(`⚠ ${dep}: пропускаю`, pct);
       }
+    }
+  }
+
+  // ШАГ 5б: Установить airllm
+  send('Проверяю airllm...', 62);
+  try {
+    execSync(`"${pythonPath}" -c "import airllm"`,
+      { timeout: 10000, stdio: 'pipe' });
+    send('✓ airllm', 64);
+  } catch (e) {
+    send('Устанавливаю airllm...', 62);
+    try {
+      execSync(`"${pythonPath}" -m pip install airllm -q`,
+        { timeout: 300000, stdio: 'pipe' });
+      send('✓ airllm установлен', 64);
+    } catch (e2) {
+      send('⚠ airllm: пропускаю', 64);
     }
   }
 
@@ -498,8 +515,8 @@ async function setupAndStart() {
     }
   }
 
-  // ШАГ 7: Запустить узел
-  globalScriptPath = path.join(noumindDir, 'node_pipeline.py');
+  // ШАГ 7: Запустить узел (AirLLM)
+  globalScriptPath = path.join(noumindDir, 'node_airllm.py');
   send('Запускаю узел...', 95);
   startNode(globalPythonExe, globalScriptPath);
 
@@ -656,7 +673,7 @@ function startNode(pythonExe, scriptPath, args) {
 
   console.log('[Node] Запуск:', pythonExe, finalArgs[0]);
   mainWindow.webContents.send('node-log',
-    `Запускаю: ${path.basename(pythonExe)} node_pipeline.py`);
+    `Запускаю: ${path.basename(pythonExe)} node_airllm.py`);
 
   nodeProcess = spawn(pythonExe, finalArgs, {
     env: {
@@ -725,7 +742,7 @@ function stopNodeProcess() {
     console.log('[Main] Node не запущен');
     return;
   }
-  console.log('[Main] Останавливаю node_pipeline.py...');
+  console.log('[Main] Останавливаю node_airllm.py...');
   isNodeRunning = false;
   try {
     nodeProcess.kill('SIGKILL');
