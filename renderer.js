@@ -839,7 +839,7 @@ async function sendMessage() {
   // ── СТРИМИНГ через SSE ──────────────────────────────────
   try {
     const sseUrl = `${GATEWAY}/chat/stream?message=${encodeURIComponent(text)}&session_id=s${Date.now()}&priority=${state.selectedMode}`;
-    const resp = await fetch(sseUrl, { signal: AbortSignal.timeout(130000) });
+    const resp = await fetch(sseUrl, { signal: AbortSignal.timeout(600000) }); // 10 мин для AirLLM
 
     if (resp.ok && resp.body) {
       state.thinking = false;
@@ -906,7 +906,7 @@ async function sendMessage() {
     renderMessages();
     try {
       const url = `${GATEWAY}/chat?message=${encodeURIComponent(text)}&session_id=s${Date.now()}&priority=${state.selectedMode}`;
-      const resp = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(130000) });
+      const resp = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(600000) }); // 10 мин для AirLLM
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
       const reply = (data.response ?? data.text ?? '').trim() || '(пустой ответ модели)';
