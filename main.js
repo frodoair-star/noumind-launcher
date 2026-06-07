@@ -659,7 +659,14 @@ function startNode(pythonExe, scriptPath, args) {
     `Запускаю: ${path.basename(pythonExe)} node_pipeline.py`);
 
   nodeProcess = spawn(pythonExe, finalArgs, {
-    env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' }
+    env: {
+      ...process.env,
+      PYTHONUNBUFFERED: '1',
+      PYTHONIOENCODING: 'utf-8',
+      KMP_DUPLICATE_LIB_OK: 'TRUE',
+      OMP_NUM_THREADS: '1',
+      TOKENIZERS_PARALLELISM: 'false'
+    }
   });
 
   isNodeRunning = true;

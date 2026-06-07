@@ -1,6 +1,6 @@
 {
   "name": "noumind",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "uNeuro — distributed LLM node launcher with EFCT+COM",
   "main": "main.js",
   "scripts": {
